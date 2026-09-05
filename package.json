@@ -1,0 +1,16 @@
+{
+  "name": "reposeal",
+  "private": true,
+  "version": "1.0.0",
+  "description": "RepoSeal static dapp frontend",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-static.mjs"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

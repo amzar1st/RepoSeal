@@ -1,5 +1,15 @@
 # RepoSeal deployment checklist
 
+## Current Studionet deployment
+
+- Status: `FINALIZED`
+- Consensus mode: `Normal (Full Consensus)`
+- Contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
+- Transaction: `0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8`
+- Smoke test: `get_verification_count()` returned `0` from accepted state.
+- Contract explorer: https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F
+- Transaction explorer: https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8
+
 ## Contract
 
 1. Open GenLayer Studio and select the stable **Studionet** network.

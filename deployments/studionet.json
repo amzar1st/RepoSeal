@@ -2,7 +2,17 @@
   "network": "studionet",
   "chain_id": 61999,
   "contract": "RepoSeal",
-  "address": null,
-  "deployment_transaction": null,
-  "explorer": "https://explorer-studio.genlayer.com"
+  "address": "0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F",
+  "deployment_transaction": "0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8",
+  "status": "FINALIZED",
+  "consensus_mode": "Normal (Full Consensus)",
+  "deployed_at": "2026-09-05T18:40:15Z",
+  "explorer": "https://explorer-studio.genlayer.com",
+  "address_url": "https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F",
+  "transaction_url": "https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8",
+  "smoke_test": {
+    "method": "get_verification_count",
+    "state": "Accepted",
+    "response": 0
+  }
 }

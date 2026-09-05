@@ -35,7 +35,9 @@ npm install
 npm run build
 ```
 
-Open `dist/index.html` from a static host. Enter the deployed contract address once, connect MetaMask to Studionet, and use the console.
+Open `dist/index.html` from a static host, connect MetaMask to Studionet, and use the console. The production Studionet contract address is preconfigured and can still be replaced from the console when testing another deployment.
+
+Live DApp: https://reposeal.amzar1st96.chatgpt.site
 
 ## Local contract validation
 
@@ -56,6 +58,10 @@ See `STUDIO_TEST_PLAN.md` and `DEPLOYMENT.md` for the deployment and evidence wo
 ## Network
 
 RepoSeal targets GenLayer Studionet: chain ID `61999`, native token `GEN`, RPC `https://studio.genlayer.com/api`.
+
+- Contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
+- Deployment transaction: `0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8`
+- Explorer: https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F
 
 ## License
 

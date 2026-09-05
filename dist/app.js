@@ -15459,10 +15459,7 @@ function from7(value, options) {
   encodable.encode(cursor);
   if (as === "Hex")
     return fromBytes
-... 94726 bytes omitted ...
-    if (assertChainId)
-          assertCurrentChain({
-            currentChainId: chainId,
+... 94817 bytes omitted ...
             chain
           });
       }
@@ -35114,6 +35111,7 @@ var createPublicClient2 = (chainConfig, customTransport) => {
 
 // frontend/src/app.js
 var STUDIONET_CHAIN_ID = "0xf22f";
+var REPOSEAL_CONTRACT_ADDRESS = "0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F";
 var STUDIONET_CHAIN = {
   chainId: STUDIONET_CHAIN_ID,
   chainName: "GenLayer Studionet",
@@ -35124,7 +35122,7 @@ var STUDIONET_CHAIN = {
 var state = {
   account: null,
   client: null,
-  contractAddress: localStorage.getItem("reposeal_contract_address") || "",
+  contractAddress: localStorage.getItem("reposeal_contract_address") || REPOSEAL_CONTRACT_ADDRESS,
   verificationId: "",
   lastTx: ""
 };
@@ -35178,7 +35176,7 @@ async function sendWrite(functionName, args) {
   activity(`Preparing the signed ${functionName} transaction\u2026`);
   const txId = await state.client.writeContract(call2);
   state.lastTx = txId;
-  $("tx-link").innerHTML = `<a href="https://explorer-studio.genlayer.com/transactions/${txId}" target="_blank" rel="noreferrer">View transaction \u2197</a>`;
+  $("tx-link").innerHTML = `<a href="https://explorer-studio.genlayer.com/tx/${txId}" target="_blank" rel="noreferrer">View transaction \u2197</a>`;
   activity(`${functionName} submitted. Waiting for finalization\u2026`);
   const receipt = await state.client.waitForTransactionReceipt({ hash: txId, status: TransactionStatus.FINALIZED });
   if (receipt.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) throw new Error(`Transaction finished without a successful contract result (${receipt.txExecutionResultName || "unknown"}).`);

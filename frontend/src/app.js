@@ -3,6 +3,7 @@ import { studionet } from "genlayer-js/chains";
 import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 
 const STUDIONET_CHAIN_ID = "0xf22f";
+const REPOSEAL_CONTRACT_ADDRESS = "0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F";
 const STUDIONET_CHAIN = {
   chainId: STUDIONET_CHAIN_ID,
   chainName: "GenLayer Studionet",
@@ -14,7 +15,7 @@ const STUDIONET_CHAIN = {
 const state = {
   account: null,
   client: null,
-  contractAddress: localStorage.getItem("reposeal_contract_address") || "",
+  contractAddress: localStorage.getItem("reposeal_contract_address") || REPOSEAL_CONTRACT_ADDRESS,
   verificationId: "",
   lastTx: "",
 };
@@ -74,7 +75,7 @@ async function sendWrite(functionName, args) {
   activity(`Preparing the signed ${functionName} transaction…`);
   const txId = await state.client.writeContract(call);
   state.lastTx = txId;
-  $("tx-link").innerHTML = `<a href="https://explorer-studio.genlayer.com/transactions/${txId}" target="_blank" rel="noreferrer">View transaction ↗</a>`;
+  $("tx-link").innerHTML = `<a href="https://explorer-studio.genlayer.com/tx/${txId}" target="_blank" rel="noreferrer">View transaction ↗</a>`;
   activity(`${functionName} submitted. Waiting for finalization…`);
   const receipt = await state.client.waitForTransactionReceipt({ hash: txId, status: TransactionStatus.FINALIZED });
   if (receipt.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) throw new Error(`Transaction finished without a successful contract result (${receipt.txExecutionResultName || "unknown"}).`);

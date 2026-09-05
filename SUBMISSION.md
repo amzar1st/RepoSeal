@@ -19,3 +19,8 @@ Each verification stores the creator, repository URL, exact commit hash, declare
 ## App
 
 The browser DApp connects MetaMask through EIP-1193 and GenLayerJS on Studionet. It supports public record reads and wallet-signed creation, analysis, and recheck actions.
+
+- Live DApp: https://reposeal.amzar1st96.chatgpt.site
+- Source: https://github.com/amzar1st/RepoSeal
+- Deployed contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
+- Deployment transaction: https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8

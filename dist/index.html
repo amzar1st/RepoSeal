@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0f14" />
+    <meta name="description" content="RepoSeal verifies open-source license and dependency compliance for an exact GitHub commit using GenLayer consensus." />
+    <title>RepoSeal · Open-source compliance verification</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="RepoSeal home">
+          <span class="brand-mark" aria-hidden="true">R/</span>
+          <span>RepoSeal</span>
+        </a>
+        <div class="network-pill"><span class="status-dot"></span>Studionet · 61999</div>
+        <button class="wallet-button" id="connect-wallet">Connect MetaMask</button>
+      </header>
+
+      <main>
+        <section class="intro-grid">
+          <div class="intro-copy">
+            <p class="eyebrow">DECENTRALIZED OPEN-SOURCE REVIEW</p>
+            <h1>Does this commit keep its promises?</h1>
+            <p class="lede">RepoSeal reads the repository, its dependency metadata, and the declared license through GenLayer validator consensus.</p>
+            <div class="verdict-legend" aria-label="Possible verdicts">
+              <span><i class="legend-swatch compliant"></i>COMPLIANT</span>
+              <span><i class="legend-swatch non-compliant"></i>NON_COMPLIANT</span>
+              <span><i class="legend-swatch inconclusive"></i>INCONCLUSIVE</span>
+            </div>
+          </div>
+          <div class="signal-card">
+            <div class="signal-line"><span>CONSENSUS INPUT</span><span class="mono">public evidence</span></div>
+            <div class="signal-line"><span>PINNED UNIT</span><span class="mono">commit hash</span></div>
+            <div class="signal-line"><span>STORED OUTPUT</span><span class="mono">verdict + proof URLs</span></div>
+            <div class="signal-footer"><span class="pulse"></span><span>Evidence stays inspectable.</span></div>
+          </div>
+        </section>
+
+        <section class="workspace-grid">
+          <div class="panel create-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">01 · REGISTER</p><h2>New verification</h2></div>
+              <span class="step-number">01</span>
+            </div>
+            <form id="create-form">
+              <label>GitHub repository URL<input id="repo-url" type="url" placeholder="https://github.com/owner/repository" required /></label>
+              <label>Exact commit hash<input id="commit-hash" class="mono-input" type="text" minlength="7" maxlength="64" placeholder="40-character SHA" required /></label>
+              <label>Declared license<input id="declared-license" type="text" value="MIT" placeholder="MIT, Apache-2.0, GPL-3.0" required /></label>
+              <label>Dependency rule<textarea id="dependency-rule" rows="3" required>Allow permissive OSI-approved licenses. Flag unknown, proprietary, or copyleft dependencies for review.</textarea></label>
+              <button class="primary-button" type="submit">Create verification <span>↗</span></button>
+            </form>
+            <p class="helper">Creating a record is deterministic. Analysis is a separate consensus transaction.</p>
+          </div>
+
+          <div class="panel inspect-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">02 · INSPECT</p><h2>Consensus console</h2></div>
+              <span class="step-number">02</span>
+            </div>
+            <div class="contract-row">
+              <label>RepoSeal contract address<input id="contract-address" class="mono-input" type="text" placeholder="0x… deployed on Studionet" /></label>
+              <button class="ghost-button" id="save-contract" type="button">Save</button>
+            </div>
+            <div class="lookup-row">
+              <label>Verification ID<input id="verification-id" class="mono-input" type="text" placeholder="verify-1" /></label>
+              <button class="secondary-button" id="load-verification" type="button">Load record</button>
+            </div>
+            <div class="record-card" id="record-card">
+              <div class="empty-state"><span class="empty-icon">⌁</span><p>No verification loaded.</p><small>Register a commit, then paste its ID here.</small></div>
+            </div>
+            <div class="action-row">
+              <button class="secondary-button" id="analyze-verification" type="button">Analyze with consensus</button>
+              <button class="ghost-button" id="refresh-verification" type="button">Refresh</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel recheck-panel">
+          <div class="recheck-copy"><p class="eyebrow">03 · RECHECK</p><h2>Follow the repository forward</h2><p>Pin a newer commit to the same record. RepoSeal clears the old result and re-runs the evidence review.</p></div>
+          <div class="recheck-form"><label>New commit hash<input id="new-commit-hash" class="mono-input" type="text" minlength="7" maxlength="64" placeholder="new SHA" /></label><button class="secondary-button" id="recheck-verification" type="button">Recheck commit</button></div>
+        </section>
+
+        <section class="activity-strip">
+          <div><span class="eyebrow">ACTIVITY</span><span id="activity-message">Connect a wallet to begin.</span></div>
+          <div class="tx-link" id="tx-link"></div>
+        </section>
+      </main>
+
+      <footer class="footer"><span>RepoSeal / built for auditable software supply chains</span><a href="https://github.com/amzar1st/RepoSeal" target="_blank" rel="noreferrer">Source on GitHub ↗</a></footer>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

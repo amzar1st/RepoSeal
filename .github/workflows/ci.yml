@@ -1,0 +1,35 @@
+name: RepoSeal checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contract-and-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install contract test dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run direct contract tests
+        run: pytest -q
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build frontend
+        run: npm ci && npm run build
+
+      - name: Validate generated bundle
+        run: node --check dist/app.js

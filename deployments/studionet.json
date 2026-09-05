@@ -1,0 +1,8 @@
+{
+  "network": "studionet",
+  "chain_id": 61999,
+  "contract": "RepoSeal",
+  "address": null,
+  "deployment_transaction": null,
+  "explorer": "https://explorer-studio.genlayer.com"
+}

@@ -1,1 +1,1 @@
-`studionet.json` is the canonical Studionet release record. It contains the finalized deployment, the original read smoke test, and the first completed full-consensus repository verification with its exact transaction hashes and stored verdict.
+`studionet.json` is the canonical Studionet release record. It contains the finalized deployment, the original read smoke test, the first completed full-consensus repository verification, and the finalized new-commit recheck with their exact transaction hashes and stored verdicts.

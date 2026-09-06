@@ -68,12 +68,16 @@ RepoSeal targets GenLayer Studionet: chain ID `61999`, native token `GEN`, RPC `
 ## Finalized live verification
 
 - Verification ID: `verify-1`
-- Repository commit: `ab4dbd9f85b03cb7f2e7da1ada9ef28b822a9e9b`
+- Initial repository commit: `ab4dbd9f85b03cb7f2e7da1ada9ef28b822a9e9b`
+- Rechecked repository commit: `7e36fef83d10eb9452fefd7d9aabd253f46766fd`
 - Create transaction: `0x6313953207e44d81f593c9b91fa35c187c70aa77f59683ff53979fbf0a764a33`
 - Analysis transaction: `0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296`
+- Recheck transaction: `0xbce2d71d411a295725a8f8e412d58cdd6022f92b9e5a39a8da5aed0f7538a0db`
 - Consensus verdict: `INCONCLUSIVE` (`55/100`)
+- Recheck count: `1`
+- Last checked: `2026-09-06T16:53:41Z`
 
-The result demonstrates the contract's fail-closed behavior: the exact commit and MIT license were verified, but three Git-based Python dependencies could not be resolved through PyPI, so validators did not claim full compliance.
+The finalized recheck demonstrates the contract's fail-closed behavior: the new exact commit and MIT license were verified, but three Git-based Python dependency licenses remained unresolved, so validators did not claim full compliance.
 
 ## License
 

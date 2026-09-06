@@ -14,7 +14,7 @@
 
 - Verification ID: `verify-1`
 - Repository: `https://github.com/amzar1st/RepoSeal`
-- Commit: `ab4dbd9f85b03cb7f2e7da1ada9ef28b822a9e9b`
+- Initial commit: `ab4dbd9f85b03cb7f2e7da1ada9ef28b822a9e9b`
 - Create transaction: `0x6313953207e44d81f593c9b91fa35c187c70aa77f59683ff53979fbf0a764a33` (`FINALIZED`)
 - Analyze transaction: `0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296` (`FINALIZED`)
 - Stored verdict: `INCONCLUSIVE`
@@ -22,6 +22,18 @@
 - Checked at: `2026-09-06T16:32:48Z`
 
 The validators verified the pinned commit, an exact MIT license match, the README, and compatible license metadata for the resolvable npm/PyPI dependencies. They returned `INCONCLUSIVE` because the registry requests generated for `genlayer-py`, `genlayer-test`, and `genvm-linter` Git dependencies returned `404`, preventing all direct dependency licenses from being identified. This is a completed verdict, not a pending or smoke-test-only claim.
+
+## Completed full-consensus recheck
+
+- Verification ID: `verify-1`
+- New commit: `7e36fef83d10eb9452fefd7d9aabd253f46766fd`
+- Recheck transaction: `0xbce2d71d411a295725a8f8e412d58cdd6022f92b9e5a39a8da5aed0f7538a0db` (`FINALIZED`)
+- Stored verdict: `INCONCLUSIVE`
+- Score: `55/100`
+- Recheck count: `1`
+- Checked at: `2026-09-06T16:53:41Z`
+
+The recheck verified that the new exact commit exists, that its repository tree is available, and that its license and README evidence remain consistent with MIT. The same three Git-based Python package licenses could not be verified through the generated PyPI requests, so consensus correctly retained an `INCONCLUSIVE` verdict.
 
 ## Contract
 

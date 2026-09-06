@@ -15458,8 +15458,2752 @@ function from7(value, options) {
   const cursor = create(new Uint8Array(encodable.length));
   encodable.encode(cursor);
   if (as === "Hex")
-    return fromBytes
-... 94817 bytes omitted ...
+    return fromBytes(cursor.bytes);
+  return cursor.bytes;
+}
+function fromHex4(hex, options = {}) {
+  const { as = "Hex" } = options;
+  return from7(hex, { as });
+}
+function getEncodable2(bytes) {
+  if (Array.isArray(bytes))
+    return getEncodableList2(bytes.map((x) => getEncodable2(x)));
+  return getEncodableBytes2(bytes);
+}
+function getEncodableList2(list) {
+  const bodyLength = list.reduce((acc, x) => acc + x.length, 0);
+  const sizeOfBodyLength = getSizeOfLength2(bodyLength);
+  const length = (() => {
+    if (bodyLength <= 55)
+      return 1 + bodyLength;
+    return 1 + sizeOfBodyLength + bodyLength;
+  })();
+  return {
+    length,
+    encode(cursor) {
+      if (bodyLength <= 55) {
+        cursor.pushByte(192 + bodyLength);
+      } else {
+        cursor.pushByte(192 + 55 + sizeOfBodyLength);
+        if (sizeOfBodyLength === 1)
+          cursor.pushUint8(bodyLength);
+        else if (sizeOfBodyLength === 2)
+          cursor.pushUint16(bodyLength);
+        else if (sizeOfBodyLength === 3)
+          cursor.pushUint24(bodyLength);
+        else
+          cursor.pushUint32(bodyLength);
+      }
+      for (const { encode: encode5 } of list) {
+        encode5(cursor);
+      }
+    }
+  };
+}
+function getEncodableBytes2(bytesOrHex) {
+  const bytes = typeof bytesOrHex === "string" ? fromHex2(bytesOrHex) : bytesOrHex;
+  const sizeOfBytesLength = getSizeOfLength2(bytes.length);
+  const length = (() => {
+    if (bytes.length === 1 && bytes[0] < 128)
+      return 1;
+    if (bytes.length <= 55)
+      return 1 + bytes.length;
+    return 1 + sizeOfBytesLength + bytes.length;
+  })();
+  return {
+    length,
+    encode(cursor) {
+      if (bytes.length === 1 && bytes[0] < 128) {
+        cursor.pushBytes(bytes);
+      } else if (bytes.length <= 55) {
+        cursor.pushByte(128 + bytes.length);
+        cursor.pushBytes(bytes);
+      } else {
+        cursor.pushByte(128 + 55 + sizeOfBytesLength);
+        if (sizeOfBytesLength === 1)
+          cursor.pushUint8(bytes.length);
+        else if (sizeOfBytesLength === 2)
+          cursor.pushUint16(bytes.length);
+        else if (sizeOfBytesLength === 3)
+          cursor.pushUint24(bytes.length);
+        else
+          cursor.pushUint32(bytes.length);
+        cursor.pushBytes(bytes);
+      }
+    }
+  };
+}
+function getSizeOfLength2(length) {
+  if (length <= 255)
+    return 1;
+  if (length <= 65535)
+    return 2;
+  if (length <= 16777215)
+    return 3;
+  if (length <= 4294967295)
+    return 4;
+  throw new BaseError3("Length is too large.");
+}
+
+// node_modules/ox/_esm/core/Signature.js
+init_Errors();
+init_Hex();
+init_Json();
+function assert5(signature, options = {}) {
+  const { recovered } = options;
+  if (typeof signature.r === "undefined")
+    throw new MissingPropertiesError({ signature });
+  if (typeof signature.s === "undefined")
+    throw new MissingPropertiesError({ signature });
+  if (recovered && typeof signature.yParity === "undefined")
+    throw new MissingPropertiesError({ signature });
+  if (signature.r < 0n || signature.r > maxUint2562)
+    throw new InvalidRError({ value: signature.r });
+  if (signature.s < 0n || signature.s > maxUint2562)
+    throw new InvalidSError({ value: signature.s });
+  if (typeof signature.yParity === "number" && signature.yParity !== 0 && signature.yParity !== 1)
+    throw new InvalidYParityError({ value: signature.yParity });
+}
+function fromBytes3(signature) {
+  return fromHex5(fromBytes(signature));
+}
+function fromHex5(signature) {
+  if (signature.length !== 130 && signature.length !== 132)
+    throw new InvalidSerializedSizeError2({ signature });
+  const r = BigInt(slice3(signature, 0, 32));
+  const s = BigInt(slice3(signature, 32, 64));
+  const yParity = (() => {
+    const yParity2 = Number(`0x${signature.slice(130)}`);
+    if (Number.isNaN(yParity2))
+      return void 0;
+    try {
+      return vToYParity(yParity2);
+    } catch {
+      throw new InvalidYParityError({ value: yParity2 });
+    }
+  })();
+  if (typeof yParity === "undefined")
+    return {
+      r,
+      s
+    };
+  return {
+    r,
+    s,
+    yParity
+  };
+}
+function extract2(value) {
+  if (typeof value.r === "undefined")
+    return void 0;
+  if (typeof value.s === "undefined")
+    return void 0;
+  return from8(value);
+}
+function from8(signature) {
+  const signature_ = (() => {
+    if (typeof signature === "string")
+      return fromHex5(signature);
+    if (signature instanceof Uint8Array)
+      return fromBytes3(signature);
+    if (typeof signature.r === "string")
+      return fromRpc2(signature);
+    if (signature.v)
+      return fromLegacy(signature);
+    return {
+      r: signature.r,
+      s: signature.s,
+      ...typeof signature.yParity !== "undefined" ? { yParity: signature.yParity } : {}
+    };
+  })();
+  assert5(signature_);
+  return signature_;
+}
+function fromLegacy(signature) {
+  return {
+    r: signature.r,
+    s: signature.s,
+    yParity: vToYParity(signature.v)
+  };
+}
+function fromRpc2(signature) {
+  const yParity = (() => {
+    const v = signature.v ? Number(signature.v) : void 0;
+    let yParity2 = signature.yParity ? Number(signature.yParity) : void 0;
+    if (typeof v === "number" && typeof yParity2 !== "number")
+      yParity2 = vToYParity(v);
+    if (typeof yParity2 !== "number")
+      throw new InvalidYParityError({ value: signature.yParity });
+    return yParity2;
+  })();
+  return {
+    r: BigInt(signature.r),
+    s: BigInt(signature.s),
+    yParity
+  };
+}
+function toTuple(signature) {
+  const { r, s, yParity } = signature;
+  return [
+    yParity ? "0x01" : "0x",
+    r === 0n ? "0x" : trimLeft2(fromNumber(r)),
+    s === 0n ? "0x" : trimLeft2(fromNumber(s))
+  ];
+}
+function vToYParity(v) {
+  if (v === 0 || v === 27)
+    return 0;
+  if (v === 1 || v === 28)
+    return 1;
+  if (v >= 35)
+    return v % 2 === 0 ? 1 : 0;
+  throw new InvalidVError({ value: v });
+}
+var InvalidSerializedSizeError2 = class extends BaseError3 {
+  constructor({ signature }) {
+    super(`Value \`${signature}\` is an invalid signature size.`, {
+      metaMessages: [
+        "Expected: 64 bytes or 65 bytes.",
+        `Received ${size3(from3(signature))} bytes.`
+      ]
+    });
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "Signature.InvalidSerializedSizeError"
+    });
+  }
+};
+var MissingPropertiesError = class extends BaseError3 {
+  constructor({ signature }) {
+    super(`Signature \`${stringify2(signature)}\` is missing either an \`r\`, \`s\`, or \`yParity\` property.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "Signature.MissingPropertiesError"
+    });
+  }
+};
+var InvalidRError = class extends BaseError3 {
+  constructor({ value }) {
+    super(`Value \`${value}\` is an invalid r value. r must be a positive integer less than 2^256.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "Signature.InvalidRError"
+    });
+  }
+};
+var InvalidSError = class extends BaseError3 {
+  constructor({ value }) {
+    super(`Value \`${value}\` is an invalid s value. s must be a positive integer less than 2^256.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "Signature.InvalidSError"
+    });
+  }
+};
+var InvalidYParityError = class extends BaseError3 {
+  constructor({ value }) {
+    super(`Value \`${value}\` is an invalid y-parity value. Y-parity must be 0 or 1.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "Signature.InvalidYParityError"
+    });
+  }
+};
+var InvalidVError = class extends BaseError3 {
+  constructor({ value }) {
+    super(`Value \`${value}\` is an invalid v value. v must be 27, 28 or >=35.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "Signature.InvalidVError"
+    });
+  }
+};
+
+// node_modules/ox/_esm/core/Authorization.js
+function from9(authorization, options = {}) {
+  if (typeof authorization.chainId === "string")
+    return fromRpc3(authorization);
+  return { ...authorization, ...options.signature };
+}
+function fromRpc3(authorization) {
+  const { address, chainId, nonce } = authorization;
+  const signature = extract2(authorization);
+  return {
+    address,
+    chainId: Number(chainId),
+    nonce: BigInt(nonce),
+    ...signature
+  };
+}
+function getSignPayload(authorization) {
+  return hash2(authorization, { presign: true });
+}
+function hash2(authorization, options = {}) {
+  const { presign } = options;
+  return keccak2562(concat2("0x05", fromHex4(toTuple2(presign ? {
+    address: authorization.address,
+    chainId: authorization.chainId,
+    nonce: authorization.nonce
+  } : authorization))));
+}
+function toTuple2(authorization) {
+  const { address, chainId, nonce } = authorization;
+  const signature = extract2(authorization);
+  return [
+    chainId ? fromNumber(chainId) : "0x",
+    address,
+    nonce ? fromNumber(nonce) : "0x",
+    ...signature ? toTuple(signature) : []
+  ];
+}
+
+// node_modules/ox/_esm/erc8010/SignatureErc8010.js
+init_Errors();
+init_Hex();
+
+// node_modules/ox/_esm/core/Secp256k1.js
+init_secp256k1();
+init_Bytes();
+init_Hex();
+function recoverAddress2(options) {
+  return fromPublicKey(recoverPublicKey2(options));
+}
+function recoverPublicKey2(options) {
+  const { payload, signature } = options;
+  const { r, s, yParity } = signature;
+  const signature_ = new secp256k1.Signature(BigInt(r), BigInt(s)).addRecoveryBit(yParity);
+  const point = signature_.recoverPublicKey(from3(payload).substring(2));
+  return from4(point);
+}
+var fromSeedDomain = fromString("ox.secp256k1.fromSeed.v1");
+
+// node_modules/ox/_esm/erc8010/SignatureErc8010.js
+var magicBytes = "0x8010801080108010801080108010801080108010801080108010801080108010";
+var suffixParameters = from6("(uint256 chainId, address delegation, uint256 nonce, uint8 yParity, uint256 r, uint256 s), address to, bytes data");
+function assert6(value) {
+  if (typeof value === "string") {
+    if (slice3(value, -32) !== magicBytes)
+      throw new InvalidWrappedSignatureError(value);
+  } else
+    assert5(value.authorization);
+}
+function from10(value) {
+  if (typeof value === "string")
+    return unwrap(value);
+  return value;
+}
+function unwrap(wrapped) {
+  assert6(wrapped);
+  const suffixLength = toNumber(slice3(wrapped, -64, -32));
+  const suffix = slice3(wrapped, -suffixLength - 64, -64);
+  const signature = slice3(wrapped, 0, -suffixLength - 64);
+  const [auth, to, data] = decode(suffixParameters, suffix);
+  const authorization = from9({
+    address: auth.delegation,
+    chainId: Number(auth.chainId),
+    nonce: auth.nonce,
+    yParity: auth.yParity,
+    r: auth.r,
+    s: auth.s
+  });
+  return {
+    authorization,
+    signature,
+    ...data && data !== "0x" ? { data, to } : {}
+  };
+}
+function wrap(value) {
+  const { data, signature } = value;
+  assert6(value);
+  const self = recoverAddress2({
+    payload: getSignPayload(value.authorization),
+    signature: from8(value.authorization)
+  });
+  const suffix = encode2(suffixParameters, [
+    {
+      ...value.authorization,
+      delegation: value.authorization.address,
+      chainId: BigInt(value.authorization.chainId)
+    },
+    value.to ?? self,
+    data ?? "0x"
+  ]);
+  const suffixLength = fromNumber(size3(suffix), { size: 32 });
+  return concat2(signature, suffix, suffixLength, magicBytes);
+}
+function validate4(value) {
+  try {
+    assert6(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+var InvalidWrappedSignatureError = class extends BaseError3 {
+  constructor(wrapped) {
+    super(`Value \`${wrapped}\` is an invalid ERC-8010 wrapped signature.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "SignatureErc8010.InvalidWrappedSignatureError"
+    });
+  }
+};
+
+// node_modules/viem/_esm/utils/unit/formatUnits.js
+init_Value();
+function formatUnits(value, decimals) {
+  return format(value, decimals);
+}
+
+// node_modules/viem/_esm/utils/unit/parseEther.js
+init_Value();
+function parseEther(ether, unit = "wei") {
+  return fromEther(ether, unit);
+}
+
+// node_modules/viem/_esm/utils/unit/parseUnits.js
+init_Value();
+function parseUnits(value, decimals) {
+  return from(value, decimals);
+}
+
+// node_modules/viem/_esm/utils/formatters/proof.js
+function formatStorageProof(storageProof) {
+  return storageProof.map((proof) => ({
+    ...proof,
+    value: BigInt(proof.value)
+  }));
+}
+function formatProof(proof) {
+  return {
+    ...proof,
+    balance: proof.balance ? BigInt(proof.balance) : void 0,
+    nonce: proof.nonce ? hexToNumber(proof.nonce) : void 0,
+    storageProof: proof.storageProof ? formatStorageProof(proof.storageProof) : void 0
+  };
+}
+
+// node_modules/viem/_esm/actions/public/getProof.js
+async function getProof(client, { address, blockHash, blockNumber, blockTag = "latest", requireCanonical, storageKeys }) {
+  const block = formatBlockParameter({
+    blockHash,
+    blockNumber,
+    blockTag,
+    requireCanonical
+  });
+  const proof = await client.request({
+    method: "eth_getProof",
+    params: [address, storageKeys, block]
+  });
+  return formatProof(proof);
+}
+
+// node_modules/viem/_esm/actions/public/getRawTransaction.js
+init_transaction();
+async function getRawTransaction(client, { hash: hash3 }) {
+  const rawTransaction = await client.request({
+    method: "eth_getRawTransactionByHash",
+    params: [hash3]
+  }, { dedupe: true });
+  if (!rawTransaction)
+    throw new TransactionNotFoundError({ hash: hash3 });
+  return rawTransaction;
+}
+
+// node_modules/viem/_esm/actions/public/getStorageAt.js
+init_formatBlockParameter();
+async function getStorageAt(client, { address, blockHash, blockNumber, blockTag = "latest", requireCanonical, slot }) {
+  const block = formatBlockParameter({
+    blockHash,
+    blockNumber,
+    blockTag,
+    requireCanonical
+  });
+  const data = await client.request({
+    method: "eth_getStorageAt",
+    params: [address, slot, block]
+  });
+  return data;
+}
+
+// node_modules/viem/_esm/actions/public/getTransaction.js
+init_transaction();
+init_toHex();
+async function getTransaction(client, { blockHash, blockNumber, blockTag: blockTag_, hash: hash3, index: index2, sender, nonce }) {
+  const blockTag = blockTag_ || "latest";
+  const blockNumberHex = blockNumber !== void 0 ? numberToHex(blockNumber) : void 0;
+  let transaction = null;
+  if (hash3) {
+    transaction = await client.request({
+      method: "eth_getTransactionByHash",
+      params: [hash3]
+    }, { dedupe: true });
+  } else if (blockHash) {
+    transaction = await client.request({
+      method: "eth_getTransactionByBlockHashAndIndex",
+      params: [blockHash, numberToHex(index2)]
+    }, { dedupe: true });
+  } else if ((blockNumberHex || blockTag) && typeof index2 === "number") {
+    transaction = await client.request({
+      method: "eth_getTransactionByBlockNumberAndIndex",
+      params: [blockNumberHex || blockTag, numberToHex(index2)]
+    }, { dedupe: Boolean(blockNumberHex) });
+  } else if (sender && typeof nonce === "number") {
+    transaction = await client.request({
+      method: "eth_getTransactionBySenderAndNonce",
+      params: [sender, numberToHex(nonce)]
+    }, { dedupe: true });
+  }
+  if (!transaction)
+    throw new TransactionNotFoundError({
+      blockHash,
+      blockNumber,
+      blockTag,
+      hash: hash3,
+      index: index2
+    });
+  const format2 = client.chain?.formatters?.transaction?.format || formatTransaction;
+  return format2(transaction, "getTransaction");
+}
+
+// node_modules/viem/_esm/actions/public/getTransactionConfirmations.js
+async function getTransactionConfirmations(client, { hash: hash3, transactionReceipt }) {
+  const [blockNumber, transaction] = await Promise.all([
+    getAction(client, getBlockNumber, "getBlockNumber")({}),
+    hash3 ? getAction(client, getTransaction, "getTransaction")({ hash: hash3 }) : void 0
+  ]);
+  const transactionBlockNumber = transactionReceipt?.blockNumber || transaction?.blockNumber;
+  if (!transactionBlockNumber)
+    return 0n;
+  return blockNumber - transactionBlockNumber + 1n;
+}
+
+// node_modules/viem/_esm/actions/public/getTransactionReceipt.js
+init_transaction();
+async function getTransactionReceipt(client, { hash: hash3 }) {
+  const receipt = await client.request({
+    method: "eth_getTransactionReceipt",
+    params: [hash3]
+  }, { dedupe: true });
+  if (!receipt)
+    throw new TransactionReceiptNotFoundError({ hash: hash3 });
+  const format2 = client.chain?.formatters?.transactionReceipt?.format || formatTransactionReceipt;
+  return format2(receipt, "getTransactionReceipt");
+}
+
+// node_modules/viem/_esm/actions/public/multicall.js
+init_abis();
+init_contracts();
+init_abi();
+init_base();
+init_contract();
+init_decodeFunctionResult();
+init_encodeFunctionData();
+init_getChainContractAddress();
+init_createBatchScheduler();
+init_stringify();
+async function multicall(client, parameters) {
+  const { account, authorizationList, allowFailure = true, blockHash, blockNumber, blockOverrides, blockTag, requireCanonical, stateOverride } = parameters;
+  const contracts = parameters.contracts;
+  const batch = typeof client.batch?.multicall === "object" ? client.batch.multicall : {};
+  const batchSize = parameters.batchSize ?? batch.batchSize ?? 1024;
+  const deployless = parameters.deployless ?? batch.deployless ?? false;
+  const multicallAddress = (() => {
+    if (parameters.multicallAddress)
+      return parameters.multicallAddress;
+    if (deployless)
+      return null;
+    if (client.chain) {
+      return getChainContractAddress({
+        blockNumber,
+        chain: client.chain,
+        contract: "multicall3"
+      });
+    }
+    throw new Error("client chain not configured. multicallAddress is required.");
+  })();
+  const chunkedCalls = [[]];
+  let currentChunk = 0;
+  let currentChunkSize = 0;
+  for (let i = 0; i < contracts.length; i++) {
+    const { abi: abi2, address, args, functionName } = contracts[i];
+    try {
+      const callData = encodeFunctionData({ abi: abi2, args, functionName });
+      currentChunkSize += (callData.length - 2) / 2;
+      if (
+        // Check if batching is enabled.
+        batchSize > 0 && // Check if the current size of the batch exceeds the size limit.
+        currentChunkSize > batchSize && // Check if the current chunk is not already empty.
+        chunkedCalls[currentChunk].length > 0
+      ) {
+        currentChunk++;
+        currentChunkSize = (callData.length - 2) / 2;
+        chunkedCalls[currentChunk] = [];
+      }
+      chunkedCalls[currentChunk] = [
+        ...chunkedCalls[currentChunk],
+        {
+          allowFailure: true,
+          callData,
+          target: address
+        }
+      ];
+    } catch (err) {
+      const error = getContractError(err, {
+        abi: abi2,
+        address,
+        args,
+        docsPath: "/docs/contract/multicall",
+        functionName,
+        sender: account
+      });
+      if (!allowFailure)
+        throw error;
+      chunkedCalls[currentChunk] = [
+        ...chunkedCalls[currentChunk],
+        {
+          allowFailure: true,
+          callData: "0x",
+          target: address
+        }
+      ];
+    }
+  }
+  const batching = Boolean(client.batch?.multicall);
+  const batches = batching ? chunkedCalls.flatMap((calls) => calls.map((call2) => [call2])) : chunkedCalls;
+  const aggregate3Results = await Promise.allSettled(batches.map((calls) => {
+    if (batching)
+      return scheduleMulticall2(client, {
+        account,
+        authorizationList,
+        batchSize,
+        blockHash,
+        blockNumber,
+        blockOverrides,
+        blockTag,
+        call: calls[0],
+        multicallAddress,
+        requireCanonical,
+        stateOverride
+      }).then((result) => [result]);
+    return getAction(client, readContract, "readContract")({
+      ...multicallAddress === null ? { code: multicall3Bytecode } : { address: multicallAddress },
+      abi: multicall3Abi,
+      account,
+      args: [calls],
+      authorizationList,
+      blockHash,
+      blockNumber,
+      blockOverrides,
+      blockTag,
+      functionName: "aggregate3",
+      requireCanonical,
+      stateOverride
+    });
+  }));
+  const results = [];
+  for (let i = 0; i < aggregate3Results.length; i++) {
+    const result = aggregate3Results[i];
+    if (result.status === "rejected") {
+      if (!allowFailure)
+        throw result.reason;
+      for (let j = 0; j < batches[i].length; j++) {
+        results.push({
+          status: "failure",
+          error: result.reason,
+          result: void 0
+        });
+      }
+      continue;
+    }
+    const aggregate3Result = result.value;
+    for (let j = 0; j < aggregate3Result.length; j++) {
+      const { returnData, success } = aggregate3Result[j];
+      const { callData } = batches[i][j];
+      const { abi: abi2, address, functionName, args } = contracts[results.length];
+      try {
+        if (callData === "0x")
+          throw new AbiDecodingZeroDataError();
+        if (!success)
+          throw new RawContractError({ data: returnData });
+        const result2 = decodeFunctionResult({
+          abi: abi2,
+          args,
+          data: returnData,
+          functionName
+        });
+        results.push(allowFailure ? { result: result2, status: "success" } : result2);
+      } catch (err) {
+        const error = getContractError(err, {
+          abi: abi2,
+          address,
+          args,
+          docsPath: "/docs/contract/multicall",
+          functionName
+        });
+        if (!allowFailure)
+          throw error;
+        results.push({ error, result: void 0, status: "failure" });
+      }
+    }
+  }
+  if (results.length !== contracts.length)
+    throw new BaseError2("multicall results mismatch");
+  return results;
+}
+async function scheduleMulticall2(client, parameters) {
+  const { batchSize, call: call2, multicallAddress, ...rest } = parameters;
+  const { wait: wait2 = 0 } = typeof client.batch?.multicall === "object" ? client.batch.multicall : {};
+  const { schedule } = createBatchScheduler({
+    id: stringify(["multicall", client.uid, batchSize, multicallAddress, rest]),
+    wait: wait2,
+    shouldSplitBatch(calls) {
+      if (batchSize === 0)
+        return false;
+      const size5 = calls.reduce((size6, { callData }) => size6 + (callData.length - 2) / 2, 0);
+      return size5 > batchSize;
+    },
+    fn: (calls) => getAction(client, readContract, "readContract")({
+      ...multicallAddress === null ? { code: multicall3Bytecode } : { address: multicallAddress },
+      ...rest,
+      abi: multicall3Abi,
+      args: [calls],
+      functionName: "aggregate3"
+    })
+  });
+  const [result] = await schedule(call2);
+  return result;
+}
+
+// node_modules/viem/_esm/actions/public/simulateBlocks.js
+init_BlockOverrides();
+init_parseAccount();
+init_abi();
+init_contract();
+init_node();
+init_decodeFunctionResult();
+init_encodeFunctionData();
+init_concat();
+init_toHex();
+init_getNodeError();
+init_transactionRequest();
+init_stateOverride2();
+init_assertRequest();
+async function simulateBlocks(client, parameters) {
+  const { blockNumber, blockTag = client.experimental_blockTag ?? "latest", blocks, returnFullTransactions, traceTransfers, validation } = parameters;
+  try {
+    const blockStateCalls = [];
+    for (const block2 of blocks) {
+      const blockOverrides = block2.blockOverrides ? toRpc2(block2.blockOverrides) : void 0;
+      const calls = block2.calls.map((call_) => {
+        const call2 = call_;
+        const account = call2.account ? parseAccount(call2.account) : void 0;
+        const data = call2.abi ? encodeFunctionData(call2) : call2.data;
+        const request = {
+          ...call2,
+          account,
+          data: call2.dataSuffix ? concat([data || "0x", call2.dataSuffix]) : data,
+          from: call2.from ?? account?.address
+        };
+        assertRequest(request);
+        return formatTransactionRequest(request);
+      });
+      const stateOverrides = block2.stateOverrides ? serializeStateOverride(block2.stateOverrides) : void 0;
+      blockStateCalls.push({
+        blockOverrides,
+        calls,
+        stateOverrides
+      });
+    }
+    const blockNumberHex = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : void 0;
+    const block = blockNumberHex || blockTag;
+    const result = await client.request({
+      method: "eth_simulateV1",
+      params: [
+        { blockStateCalls, returnFullTransactions, traceTransfers, validation },
+        block
+      ]
+    });
+    return result.map((block2, i) => ({
+      ...formatBlock(block2),
+      calls: block2.calls.map((call2, j) => {
+        const { abi: abi2, args, functionName, to } = blocks[i].calls[j];
+        const data = call2.error?.data ?? call2.returnData;
+        const gasUsed = BigInt(call2.gasUsed);
+        const logs = call2.logs?.map((log) => formatLog(log));
+        const status = call2.status === "0x1" ? "success" : "failure";
+        const result2 = abi2 && status === "success" && data !== "0x" ? decodeFunctionResult({
+          abi: abi2,
+          data,
+          functionName
+        }) : null;
+        const error = (() => {
+          if (status === "success")
+            return void 0;
+          let error2;
+          if (data === "0x")
+            error2 = new AbiDecodingZeroDataError();
+          else if (data)
+            error2 = new RawContractError({ data });
+          if (!error2)
+            return void 0;
+          return getContractError(error2, {
+            abi: abi2 ?? [],
+            address: to ?? "0x",
+            args,
+            functionName: functionName ?? "<unknown>"
+          });
+        })();
+        return {
+          data,
+          gasUsed,
+          logs,
+          status,
+          ...status === "success" ? {
+            result: result2
+          } : {
+            error
+          }
+        };
+      })
+    }));
+  } catch (e) {
+    const cause = e;
+    const error = getNodeError(cause, {});
+    if (error instanceof UnknownNodeError)
+      throw cause;
+    throw error;
+  }
+}
+
+// node_modules/ox/_esm/core/AbiItem.js
+init_exports();
+init_Errors();
+init_Hex();
+
+// node_modules/ox/_esm/core/internal/abiItem.js
+init_Errors();
+function normalizeSignature2(signature) {
+  let active = true;
+  let current = "";
+  let level = 0;
+  let result = "";
+  let valid = false;
+  for (let i = 0; i < signature.length; i++) {
+    const char = signature[i];
+    if (["(", ")", ","].includes(char))
+      active = true;
+    if (char === "(")
+      level++;
+    if (char === ")")
+      level--;
+    if (!active)
+      continue;
+    if (level === 0) {
+      if (char === " " && ["event", "function", "error", ""].includes(result))
+        result = "";
+      else {
+        result += char;
+        if (char === ")") {
+          valid = true;
+          break;
+        }
+      }
+      continue;
+    }
+    if (char === " ") {
+      if (signature[i - 1] !== "," && current !== "," && current !== ",(") {
+        current = "";
+        active = false;
+      }
+      continue;
+    }
+    result += char;
+    current += char;
+  }
+  if (!valid)
+    throw new BaseError3("Unable to normalize signature.");
+  return result;
+}
+function isArgOfType2(arg, abiParameter) {
+  const argType = typeof arg;
+  const abiParameterType = abiParameter.type;
+  switch (abiParameterType) {
+    case "address":
+      return validate3(arg, { strict: false });
+    case "bool":
+      return argType === "boolean";
+    case "function":
+      return argType === "string";
+    case "string":
+      return argType === "string";
+    default: {
+      if (abiParameterType === "tuple" && "components" in abiParameter)
+        return Object.values(abiParameter.components).every((component, index2) => {
+          return isArgOfType2(Object.values(arg)[index2], component);
+        });
+      if (/^u?int(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/.test(abiParameterType))
+        return argType === "number" || argType === "bigint";
+      if (/^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/.test(abiParameterType))
+        return argType === "string" || arg instanceof Uint8Array;
+      if (/[a-z]+[1-9]{0,3}(\[[0-9]{0,}\])+$/.test(abiParameterType)) {
+        return Array.isArray(arg) && arg.every((x) => isArgOfType2(x, {
+          ...abiParameter,
+          // Pop off `[]` or `[M]` from end of type
+          type: abiParameterType.replace(/(\[[0-9]{0,}\])$/, "")
+        }));
+      }
+      return false;
+    }
+  }
+}
+function getAmbiguousTypes2(sourceParameters, targetParameters, args) {
+  for (const parameterIndex in sourceParameters) {
+    const sourceParameter = sourceParameters[parameterIndex];
+    const targetParameter = targetParameters[parameterIndex];
+    if (sourceParameter.type === "tuple" && targetParameter.type === "tuple" && "components" in sourceParameter && "components" in targetParameter)
+      return getAmbiguousTypes2(sourceParameter.components, targetParameter.components, args[parameterIndex]);
+    const types = [sourceParameter.type, targetParameter.type];
+    const ambiguous = (() => {
+      if (types.includes("address") && types.includes("bytes20"))
+        return true;
+      if (types.includes("address") && types.includes("string"))
+        return validate3(args[parameterIndex], {
+          strict: false
+        });
+      if (types.includes("address") && types.includes("bytes"))
+        return validate3(args[parameterIndex], {
+          strict: false
+        });
+      return false;
+    })();
+    if (ambiguous)
+      return types;
+  }
+  return;
+}
+
+// node_modules/ox/_esm/core/AbiItem.js
+function from11(abiItem, options = {}) {
+  const { prepare = true } = options;
+  const item = (() => {
+    if (Array.isArray(abiItem))
+      return parseAbiItem(abiItem);
+    if (typeof abiItem === "string")
+      return parseAbiItem(abiItem);
+    return abiItem;
+  })();
+  return {
+    ...item,
+    ...prepare ? { hash: getSignatureHash(item) } : {}
+  };
+}
+function fromAbi(abi2, name, options) {
+  const { args = [], prepare = true } = options ?? {};
+  const isSelector = validate2(name, { strict: false });
+  const abiItems = abi2.filter((abiItem2) => {
+    if (isSelector) {
+      if (abiItem2.type === "function" || abiItem2.type === "error")
+        return getSelector(abiItem2) === slice3(name, 0, 4);
+      if (abiItem2.type === "event")
+        return getSignatureHash(abiItem2) === name;
+      return false;
+    }
+    return "name" in abiItem2 && abiItem2.name === name;
+  });
+  if (abiItems.length === 0)
+    throw new NotFoundError({ name });
+  if (abiItems.length === 1)
+    return {
+      ...abiItems[0],
+      ...prepare ? { hash: getSignatureHash(abiItems[0]) } : {}
+    };
+  let matchedAbiItem;
+  for (const abiItem2 of abiItems) {
+    if (!("inputs" in abiItem2))
+      continue;
+    if (!args || args.length === 0) {
+      if (!abiItem2.inputs || abiItem2.inputs.length === 0)
+        return {
+          ...abiItem2,
+          ...prepare ? { hash: getSignatureHash(abiItem2) } : {}
+        };
+      continue;
+    }
+    if (!abiItem2.inputs)
+      continue;
+    if (abiItem2.inputs.length === 0)
+      continue;
+    if (abiItem2.inputs.length !== args.length)
+      continue;
+    const matched = args.every((arg, index2) => {
+      const abiParameter = "inputs" in abiItem2 && abiItem2.inputs[index2];
+      if (!abiParameter)
+        return false;
+      return isArgOfType2(arg, abiParameter);
+    });
+    if (matched) {
+      if (matchedAbiItem && "inputs" in matchedAbiItem && matchedAbiItem.inputs) {
+        const ambiguousTypes = getAmbiguousTypes2(abiItem2.inputs, matchedAbiItem.inputs, args);
+        if (ambiguousTypes)
+          throw new AmbiguityError({
+            abiItem: abiItem2,
+            type: ambiguousTypes[0]
+          }, {
+            abiItem: matchedAbiItem,
+            type: ambiguousTypes[1]
+          });
+      }
+      matchedAbiItem = abiItem2;
+    }
+  }
+  const abiItem = (() => {
+    if (matchedAbiItem)
+      return matchedAbiItem;
+    const [abiItem2, ...overloads] = abiItems;
+    return { ...abiItem2, overloads };
+  })();
+  if (!abiItem)
+    throw new NotFoundError({ name });
+  return {
+    ...abiItem,
+    ...prepare ? { hash: getSignatureHash(abiItem) } : {}
+  };
+}
+function getSelector(...parameters) {
+  const abiItem = (() => {
+    if (Array.isArray(parameters[0])) {
+      const [abi2, name] = parameters;
+      return fromAbi(abi2, name);
+    }
+    return parameters[0];
+  })();
+  return slice3(getSignatureHash(abiItem), 0, 4);
+}
+function getSignature(...parameters) {
+  const abiItem = (() => {
+    if (Array.isArray(parameters[0])) {
+      const [abi2, name] = parameters;
+      return fromAbi(abi2, name);
+    }
+    return parameters[0];
+  })();
+  const signature = (() => {
+    if (typeof abiItem === "string")
+      return abiItem;
+    return formatAbiItem(abiItem);
+  })();
+  return normalizeSignature2(signature);
+}
+function getSignatureHash(...parameters) {
+  const abiItem = (() => {
+    if (Array.isArray(parameters[0])) {
+      const [abi2, name] = parameters;
+      return fromAbi(abi2, name);
+    }
+    return parameters[0];
+  })();
+  if (typeof abiItem !== "string" && "hash" in abiItem && abiItem.hash)
+    return abiItem.hash;
+  return keccak2562(fromString2(getSignature(abiItem)));
+}
+var AmbiguityError = class extends BaseError3 {
+  constructor(x, y) {
+    super("Found ambiguous types in overloaded ABI Items.", {
+      metaMessages: [
+        // TODO: abitype to add support for signature-formatted ABI items.
+        `\`${x.type}\` in \`${normalizeSignature2(formatAbiItem(x.abiItem))}\`, and`,
+        `\`${y.type}\` in \`${normalizeSignature2(formatAbiItem(y.abiItem))}\``,
+        "",
+        "These types encode differently and cannot be distinguished at runtime.",
+        "Remove one of the ambiguous items in the ABI."
+      ]
+    });
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "AbiItem.AmbiguityError"
+    });
+  }
+};
+var NotFoundError = class extends BaseError3 {
+  constructor({ name, data, type = "item" }) {
+    const selector = (() => {
+      if (name)
+        return ` with name "${name}"`;
+      if (data)
+        return ` with data "${data}"`;
+      return "";
+    })();
+    super(`ABI ${type}${selector} not found.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "AbiItem.NotFoundError"
+    });
+  }
+};
+
+// node_modules/ox/_esm/core/AbiConstructor.js
+init_Hex();
+function encode3(...parameters) {
+  const [abiConstructor, options] = (() => {
+    if (Array.isArray(parameters[0])) {
+      const [abi2, options2] = parameters;
+      return [fromAbi2(abi2), options2];
+    }
+    return parameters;
+  })();
+  const { bytecode, args } = options;
+  return concat2(bytecode, abiConstructor.inputs?.length && args?.length ? encode2(abiConstructor.inputs, args) : "0x");
+}
+function from12(abiConstructor) {
+  return from11(abiConstructor);
+}
+function fromAbi2(abi2) {
+  const item = abi2.find((item2) => item2.type === "constructor");
+  if (!item)
+    throw new NotFoundError({ name: "constructor" });
+  return item;
+}
+
+// node_modules/ox/_esm/core/AbiEvent.js
+function from13(abiEvent, options = {}) {
+  return from11(abiEvent, options);
+}
+function getSelector2(abiItem) {
+  return getSignatureHash(abiItem);
+}
+
+// node_modules/ox/_esm/core/AbiFunction.js
+init_Hex();
+function decodeResult(...parameters) {
+  const [abiFunction, data, options = {}] = (() => {
+    if (Array.isArray(parameters[0])) {
+      const [abi2, name, data2, options2] = parameters;
+      return [fromAbi3(abi2, name), data2, options2];
+    }
+    return parameters;
+  })();
+  const values = decode(abiFunction.outputs, data, options);
+  if (values && Object.keys(values).length === 0)
+    return void 0;
+  if (values && Object.keys(values).length === 1) {
+    if (Array.isArray(values))
+      return values[0];
+    return Object.values(values)[0];
+  }
+  return values;
+}
+function encodeData2(...parameters) {
+  const [abiFunction, args = []] = (() => {
+    if (Array.isArray(parameters[0])) {
+      const [abi2, name, args3] = parameters;
+      return [fromAbi3(abi2, name, { args: args3 }), args3];
+    }
+    const [abiFunction2, args2] = parameters;
+    return [abiFunction2, args2];
+  })();
+  const { overloads } = abiFunction;
+  const item = overloads ? fromAbi3([abiFunction, ...overloads], abiFunction.name, {
+    args
+  }) : abiFunction;
+  const selector = getSelector3(item);
+  const data = args.length > 0 ? encode2(item.inputs, args) : void 0;
+  return data ? concat2(selector, data) : selector;
+}
+function from14(abiFunction, options = {}) {
+  return from11(abiFunction, options);
+}
+function fromAbi3(abi2, name, options) {
+  const item = fromAbi(abi2, name, options);
+  if (item.type !== "function")
+    throw new NotFoundError({ name, type: "function" });
+  return item;
+}
+function getSelector3(abiItem) {
+  return getSelector(abiItem);
+}
+
+// node_modules/viem/_esm/actions/public/simulateCalls.js
+init_parseAccount();
+
+// node_modules/viem/_esm/constants/address.js
+var ethAddress = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+var zeroAddress = "0x0000000000000000000000000000000000000000";
+
+// node_modules/viem/_esm/actions/public/simulateCalls.js
+init_contracts();
+init_base();
+init_contract();
+init_node();
+init_pad();
+init_fromHex();
+init_call();
+var getBalanceCode = "0x6080604052348015600e575f80fd5b5061016d8061001c5f395ff3fe608060405234801561000f575f80fd5b5060043610610029575f3560e01c8063f8b2cb4f1461002d575b5f80fd5b610047600480360381019061004291906100db565b61005d565b604051610054919061011e565b60405180910390f35b5f8173ffffffffffffffffffffffffffffffffffffffff16319050919050565b5f80fd5b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f6100aa82610081565b9050919050565b6100ba816100a0565b81146100c4575f80fd5b50565b5f813590506100d5816100b1565b92915050565b5f602082840312156100f0576100ef61007d565b5b5f6100fd848285016100c7565b91505092915050565b5f819050919050565b61011881610106565b82525050565b5f6020820190506101315f83018461010f565b9291505056fea26469706673582212203b9fe929fe995c7cf9887f0bdba8a36dd78e8b73f149b17d2d9ad7cd09d2dc6264736f6c634300081a0033";
+var staticCallCode = "0x608060405234801561000f575f5ffd5b5060043610610029575f3560e01c8063fd00430c1461002d575b5f5ffd5b6100476004803603810190610042919061012b565b610049565b005b80825f375f5f825f865afa610060573d5f5f3e3d5ffd5b3d5f5f3e3d5ff35b5f5ffd5b5f5ffd5b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f61009982610070565b9050919050565b6100a98161008f565b81146100b3575f5ffd5b50565b5f813590506100c4816100a0565b92915050565b5f5ffd5b5f5ffd5b5f5ffd5b5f5f83601f8401126100eb576100ea6100ca565b5b8235905067ffffffffffffffff811115610108576101076100ce565b5b602083019150836001820283011115610124576101236100d2565b5b9250929050565b5f5f5f6040848603121561014257610141610068565b5b5f61014f868287016100b6565b935050602084013567ffffffffffffffff8111156101705761016f61006c565b5b61017c868287016100d6565b9250925050925092509256fea2646970667358221220635ed99185cacf3f2acba6921f23687c969cec2bbaf5f9ad599f507e6e105e6964736f6c63430008230033";
+var staticCallAddressBase = 0x00000000000000000000000000000000deadbeefn;
+var transferEventSelector = getSelector2(from13("event Transfer(address indexed from, address indexed to, uint256 value)"));
+var balanceOfFunction = from14("function balanceOf(address) returns (uint256)");
+var decimalsFunction = from14("function decimals() returns (uint256)");
+var tokenUriFunction = from14("function tokenURI(uint256) returns (string)");
+var symbolFunction = from14("function symbol() returns (string)");
+var staticCallFunction = from14("function query(address target, bytes data)");
+async function simulateCalls(client, parameters) {
+  const { blockNumber, blockTag, calls, stateOverrides, traceAssetChanges, traceTransfers, validation } = parameters;
+  const account = parameters.account ? parseAccount(parameters.account) : void 0;
+  if (traceAssetChanges && !account)
+    throw new BaseError2("`account` is required when `traceAssetChanges` is true");
+  const getBalanceData = account ? encode3(from12("constructor(bytes, bytes)"), {
+    bytecode: deploylessCallViaBytecodeBytecode,
+    args: [
+      getBalanceCode,
+      encodeData2(from14("function getBalance(address)"), [account.address])
+    ]
+  }) : void 0;
+  const blockTag_ = blockTag ?? client.experimental_blockTag ?? "latest";
+  let baseBlockNumber = blockNumber;
+  if (traceAssetChanges && typeof baseBlockNumber !== "bigint" && blockTag_ !== "earliest" && blockTag_ !== "pending") {
+    if (blockTag_ === "latest")
+      baseBlockNumber = await getBlockNumber(client, { cacheTime: 0 });
+    else {
+      const block2 = await getBlock(client, { blockTag: blockTag_ });
+      if (typeof block2.number !== "bigint")
+        throw new BaseError2(`Block tag \`${blockTag_}\` did not resolve to a number.`);
+      baseBlockNumber = block2.number;
+    }
+  }
+  const block_ = typeof baseBlockNumber === "bigint" ? { blockNumber: baseBlockNumber } : { blockTag: blockTag_ };
+  const discovery = traceAssetChanges ? await simulateBlocks(client, {
+    ...block_,
+    blocks: [
+      {
+        calls: calls.map((call2) => ({
+          ...call2,
+          from: account.address
+        })),
+        stateOverrides
+      }
+    ],
+    traceTransfers,
+    validation
+  }) : void 0;
+  const assetAddresses = discovery ? [
+    .../* @__PURE__ */ new Set([
+      ...tokensFromLogs(discovery[0].calls.flatMap((call2) => call2.logs ?? []), account.address),
+      // Included even for calls without data: contracts that mint on receiving
+      // native value (WETH) emit `Deposit`, not a `Transfer` the logs would catch.
+      // Candidates without code fall out at `isBalance`.
+      ...parameters.calls.map((call2) => call2.to?.toLowerCase())
+    ])
+  ].filter((address) => Boolean(address) && address !== ethAddress && address !== zeroAddress) : [];
+  const staticCallAddress = getStaticCallAddress([
+    ...account ? [account.address] : [],
+    ...assetAddresses,
+    ...stateOverrides?.map(({ address }) => address) ?? []
+  ]);
+  const staticCallStateOverrides = [
+    { address: staticCallAddress, code: staticCallCode }
+  ];
+  const [balanceCallsPre, blocks] = await Promise.all([
+    traceAssetChanges ? Promise.all([
+      readBalance(client, {
+        account: account.address,
+        ...block_,
+        data: getBalanceData,
+        stateOverride: stateOverrides
+      }),
+      ...assetAddresses.map((address) => readBalance(client, {
+        account: account.address,
+        address,
+        ...block_,
+        data: encodeData2(balanceOfFunction, [
+          account.address
+        ]),
+        staticCallAddress,
+        stateOverride: stateOverrides
+      }))
+    ]) : [],
+    simulateBlocks(client, {
+      ...block_,
+      blocks: [
+        {
+          calls: [...calls, { to: zeroAddress }].map((call2) => ({
+            ...call2,
+            from: account?.address
+          })),
+          stateOverrides
+        },
+        ...traceAssetChanges ? [
+          // ETH post balances
+          {
+            calls: [{ data: getBalanceData }]
+          },
+          // Asset post balances
+          {
+            calls: assetAddresses.map((address) => ({
+              to: staticCallAddress,
+              data: encodeStaticCall(address, encodeData2(balanceOfFunction, [
+                account.address
+              ]))
+            })),
+            stateOverrides: staticCallStateOverrides
+          },
+          // Decimals
+          {
+            calls: assetAddresses.map((address) => ({
+              to: staticCallAddress,
+              data: encodeStaticCall(address, encodeData2(decimalsFunction))
+            })),
+            stateOverrides: staticCallStateOverrides
+          },
+          // Token URI
+          {
+            calls: assetAddresses.map((address) => ({
+              to: staticCallAddress,
+              data: encodeStaticCall(address, encodeData2(tokenUriFunction, [0n]))
+            })),
+            stateOverrides: staticCallStateOverrides
+          },
+          // Symbols
+          {
+            calls: assetAddresses.map((address) => ({
+              to: staticCallAddress,
+              data: encodeStaticCall(address, encodeData2(symbolFunction))
+            })),
+            stateOverrides: staticCallStateOverrides
+          }
+        ] : []
+      ],
+      traceTransfers,
+      validation
+    })
+  ]);
+  const block_results = blocks[0];
+  const [block_ethPost, block_assetsPost, block_decimals, block_tokenURI, block_symbols] = traceAssetChanges ? blocks.slice(1) : [];
+  const { calls: block_calls, ...block } = block_results;
+  const results = block_calls.slice(0, -1);
+  const balancesPre = balanceCallsPre.map((call2) => isBalance(call2) ? hexToBigInt(call2.data) : null);
+  const ethPost = block_ethPost?.calls ?? [];
+  const assetsPost = block_assetsPost?.calls ?? [];
+  const balanceCallsPost = [...ethPost, ...assetsPost];
+  const balancesPost = balanceCallsPost.map((call2) => isBalance(call2) ? hexToBigInt(call2.data) : null);
+  const decimals = (block_decimals?.calls ?? []).map((call2) => decodeAssetResult(call2, decimalsFunction));
+  const symbols = (block_symbols?.calls ?? []).map((call2) => decodeAssetResult(call2, symbolFunction));
+  const tokenURI = (block_tokenURI?.calls ?? []).map((call2) => decodeAssetResult(call2, tokenUriFunction));
+  const changes = [];
+  for (const [i, balancePost] of balancesPost.entries()) {
+    const balancePre_ = balancesPre[i];
+    const preCall = balanceCallsPre[i];
+    const balancePre = typeof balancePre_ === "bigint" ? balancePre_ : i > 0 && preCall?.status === "success" && preCall.data === "0x" ? 0n : null;
+    if (typeof balancePost !== "bigint")
+      continue;
+    if (typeof balancePre !== "bigint")
+      continue;
+    const decimals_ = decimals[i - 1];
+    const symbol_ = symbols[i - 1];
+    const tokenURI_ = tokenURI[i - 1];
+    const token = (() => {
+      if (i === 0)
+        return {
+          address: ethAddress,
+          decimals: 18,
+          symbol: "ETH"
+        };
+      return {
+        address: assetAddresses[i - 1],
+        decimals: tokenURI_ || decimals_ ? Number(decimals_ ?? 1) : void 0,
+        symbol: symbol_ ?? void 0
+      };
+    })();
+    changes.push({
+      token,
+      value: {
+        pre: balancePre,
+        post: balancePost,
+        diff: balancePost - balancePre
+      }
+    });
+  }
+  return {
+    assetChanges: changes,
+    block,
+    results
+  };
+}
+function encodeStaticCall(address, data) {
+  return encodeData2(staticCallFunction, [address, data]);
+}
+function tokensFromLogs(logs, account) {
+  const account_ = pad(account.toLowerCase(), { size: 32 });
+  return logs.filter((log) => {
+    if (log.topics[0]?.toLowerCase() !== transferEventSelector)
+      return false;
+    if (log.address.toLowerCase() === ethAddress)
+      return false;
+    return log.topics[1]?.toLowerCase() === account_ || log.topics[2]?.toLowerCase() === account_;
+  }).map((log) => log.address.toLowerCase());
+}
+function isBalance(call2) {
+  return call2.status === "success" && /^0x[\da-f]{64}$/i.test(call2.data);
+}
+function decodeAssetResult(call2, abiFunction) {
+  if (call2.status === "failure" || call2.data === "0x")
+    return null;
+  try {
+    return decodeResult(abiFunction, call2.data);
+  } catch {
+    return null;
+  }
+}
+async function readBalance(client, parameters) {
+  const { account, address, blockNumber, blockTag, data, staticCallAddress, stateOverride } = parameters;
+  try {
+    const result = await call({ ...client, ccipRead: false }, {
+      account: address ? zeroAddress : account,
+      data: address ? encodeStaticCall(address, data) : data,
+      stateOverride: address && staticCallAddress ? [
+        ...stateOverride ?? [],
+        { address: staticCallAddress, code: staticCallCode }
+      ] : stateOverride,
+      ...address ? { to: staticCallAddress } : {},
+      ...typeof blockNumber === "bigint" ? { blockNumber } : { blockTag }
+    });
+    return { data: result.data ?? "0x", status: "success" };
+  } catch (error) {
+    if (!(error instanceof CallExecutionError) || !(error.cause instanceof ExecutionRevertedError))
+      throw error;
+    return { data: "0x", status: "failure" };
+  }
+}
+function getStaticCallAddress(addresses) {
+  const occupied = new Set(addresses.map((address) => address.toLowerCase()));
+  let value = staticCallAddressBase;
+  while (occupied.has(`0x${value.toString(16).padStart(40, "0")}`))
+    value++;
+  return `0x${value.toString(16).padStart(40, "0")}`;
+}
+
+// node_modules/ox/_esm/erc6492/SignatureErc6492.js
+var SignatureErc6492_exports = {};
+__export(SignatureErc6492_exports, {
+  InvalidWrappedSignatureError: () => InvalidWrappedSignatureError2,
+  assert: () => assert7,
+  from: () => from15,
+  magicBytes: () => magicBytes2,
+  universalSignatureValidatorAbi: () => universalSignatureValidatorAbi,
+  universalSignatureValidatorBytecode: () => universalSignatureValidatorBytecode,
+  unwrap: () => unwrap2,
+  validate: () => validate5,
+  wrap: () => wrap2
+});
+init_Errors();
+init_Hex();
+var magicBytes2 = "0x6492649264926492649264926492649264926492649264926492649264926492";
+var universalSignatureValidatorBytecode = "0x608060405234801561001057600080fd5b5060405161069438038061069483398101604081905261002f9161051e565b600061003c848484610048565b9050806000526001601ff35b60007f64926492649264926492649264926492649264926492649264926492649264926100748361040c565b036101e7576000606080848060200190518101906100929190610577565b60405192955090935091506000906001600160a01b038516906100b69085906105dd565b6000604051808303816000865af19150503d80600081146100f3576040519150601f19603f3d011682016040523d82523d6000602084013e6100f8565b606091505b50509050876001600160a01b03163b60000361016057806101605760405162461bcd60e51b815260206004820152601e60248201527f5369676e617475726556616c696461746f723a206465706c6f796d656e74000060448201526064015b60405180910390fd5b604051630b135d3f60e11b808252906001600160a01b038a1690631626ba7e90610190908b9087906004016105f9565b602060405180830381865afa1580156101ad573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101d19190610633565b6001600160e01b03191614945050505050610405565b6001600160a01b0384163b1561027a57604051630b135d3f60e11b808252906001600160a01b03861690631626ba7e9061022790879087906004016105f9565b602060405180830381865afa158015610244573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102689190610633565b6001600160e01b031916149050610405565b81516041146102df5760405162461bcd60e51b815260206004820152603a602482015260008051602061067483398151915260448201527f3a20696e76616c6964207369676e6174757265206c656e6774680000000000006064820152608401610157565b6102e7610425565b5060208201516040808401518451859392600091859190811061030c5761030c61065d565b016020015160f81c9050601b811480159061032b57508060ff16601c14155b1561038c5760405162461bcd60e51b815260206004820152603b602482015260008051602061067483398151915260448201527f3a20696e76616c6964207369676e617475726520762076616c756500000000006064820152608401610157565b60408051600081526020810180835289905260ff83169181019190915260608101849052608081018390526001600160a01b0389169060019060a0016020604051602081039080840390855afa1580156103ea573d6000803e3d6000fd5b505050602060405103516001600160a01b0316149450505050505b9392505050565b600060208251101561041d57600080fd5b508051015190565b60405180606001604052806003906020820280368337509192915050565b6001600160a01b038116811461045857600080fd5b50565b634e487b7160e01b600052604160045260246000fd5b60005b8381101561048c578181015183820152602001610474565b50506000910152565b600082601f8301126104a657600080fd5b81516001600160401b038111156104bf576104bf61045b565b604051601f8201601f19908116603f011681016001600160401b03811182821017156104ed576104ed61045b565b60405281815283820160200185101561050557600080fd5b610516826020830160208701610471565b949350505050565b60008060006060848603121561053357600080fd5b835161053e81610443565b6020850151604086015191945092506001600160401b0381111561056157600080fd5b61056d86828701610495565b9150509250925092565b60008060006060848603121561058c57600080fd5b835161059781610443565b60208501519093506001600160401b038111156105b357600080fd5b6105bf86828701610495565b604086015190935090506001600160401b0381111561056157600080fd5b600082516105ef818460208701610471565b9190910192915050565b828152604060208201526000825180604084015261061e816060850160208701610471565b601f01601f1916919091016060019392505050565b60006020828403121561064557600080fd5b81516001600160e01b03198116811461040557600080fd5b634e487b7160e01b600052603260045260246000fdfe5369676e617475726556616c696461746f72237265636f7665725369676e6572";
+var universalSignatureValidatorAbi = [
+  {
+    inputs: [
+      {
+        name: "_signer",
+        type: "address"
+      },
+      {
+        name: "_hash",
+        type: "bytes32"
+      },
+      {
+        name: "_signature",
+        type: "bytes"
+      }
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor"
+  },
+  {
+    inputs: [
+      {
+        name: "_signer",
+        type: "address"
+      },
+      {
+        name: "_hash",
+        type: "bytes32"
+      },
+      {
+        name: "_signature",
+        type: "bytes"
+      }
+    ],
+    outputs: [
+      {
+        type: "bool"
+      }
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+    name: "isValidSig"
+  }
+];
+function assert7(wrapped) {
+  if (slice3(wrapped, -32) !== magicBytes2)
+    throw new InvalidWrappedSignatureError2(wrapped);
+}
+function from15(wrapped) {
+  if (typeof wrapped === "string")
+    return unwrap2(wrapped);
+  return wrapped;
+}
+function unwrap2(wrapped) {
+  assert7(wrapped);
+  const [to, data, signature] = decode(from6("address, bytes, bytes"), wrapped);
+  return { data, signature, to };
+}
+function wrap2(value) {
+  const { data, signature, to } = value;
+  return concat2(encode2(from6("address, bytes, bytes"), [
+    to,
+    data,
+    signature
+  ]), magicBytes2);
+}
+function validate5(wrapped) {
+  try {
+    assert7(wrapped);
+    return true;
+  } catch {
+    return false;
+  }
+}
+var InvalidWrappedSignatureError2 = class extends BaseError3 {
+  constructor(wrapped) {
+    super(`Value \`${wrapped}\` is an invalid ERC-6492 wrapped signature.`);
+    Object.defineProperty(this, "name", {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: "SignatureErc6492.InvalidWrappedSignatureError"
+    });
+  }
+};
+
+// node_modules/viem/_esm/actions/public/verifyHash.js
+init_abis();
+init_contracts();
+init_contract();
+init_encodeDeployData();
+init_encodeFunctionData();
+init_getAddress();
+init_isAddressEqual();
+init_concat();
+init_isHex();
+init_fromHex();
+init_toHex();
+
+// node_modules/viem/_esm/utils/signature/serializeSignature.js
+init_secp256k1();
+init_fromHex();
+init_toBytes();
+function serializeSignature({ r, s, to = "hex", v, yParity }) {
+  const yParity_ = (() => {
+    if (yParity === 0 || yParity === 1)
+      return yParity;
+    if (v && (v === 27n || v === 28n || v >= 35n))
+      return v % 2n === 0n ? 1 : 0;
+    throw new Error("Invalid `v` or `yParity` value");
+  })();
+  const signature = `0x${new secp256k1.Signature(hexToBigInt(r), hexToBigInt(s)).toCompactHex()}${yParity_ === 0 ? "1b" : "1c"}`;
+  if (to === "hex")
+    return signature;
+  return hexToBytes(signature);
+}
+
+// node_modules/viem/_esm/actions/public/verifyHash.js
+init_call();
+async function verifyHash(client, parameters) {
+  const { address, chain = client.chain, hash: hash3, erc6492VerifierAddress: verifierAddress = parameters.universalSignatureVerifierAddress ?? chain?.contracts?.erc6492Verifier?.address, multicallAddress = parameters.multicallAddress ?? chain?.contracts?.multicall3?.address, mode = "auto" } = parameters;
+  if (chain?.verifyHash)
+    return await chain.verifyHash(client, parameters);
+  const signature = (() => {
+    const signature2 = parameters.signature;
+    if (isHex(signature2))
+      return signature2;
+    if (typeof signature2 === "object" && "r" in signature2 && "s" in signature2)
+      return serializeSignature(signature2);
+    return bytesToHex(signature2);
+  })();
+  try {
+    if (mode === "eoa") {
+      try {
+        const verified = isAddressEqual(getAddress(address), await recoverAddress({ hash: hash3, signature }));
+        if (verified)
+          return true;
+      } catch {
+      }
+    }
+    if (SignatureErc8010_exports.validate(signature))
+      return await verifyErc8010(client, {
+        ...parameters,
+        multicallAddress,
+        signature
+      });
+    return await verifyErc6492(client, {
+      ...parameters,
+      verifierAddress,
+      signature
+    });
+  } catch (error) {
+    if (mode !== "eoa") {
+      try {
+        const verified = isAddressEqual(getAddress(address), await recoverAddress({ hash: hash3, signature }));
+        if (verified)
+          return true;
+      } catch {
+      }
+    }
+    if (error instanceof VerificationError) {
+      return false;
+    }
+    throw error;
+  }
+}
+async function verifyErc8010(client, parameters) {
+  const { address, blockHash, blockNumber, blockTag, hash: hash3, multicallAddress, requireCanonical } = parameters;
+  const { authorization: authorization_ox, data: initData, signature, to } = SignatureErc8010_exports.unwrap(parameters.signature);
+  const code = await getCode(client, {
+    address,
+    blockHash,
+    blockNumber,
+    blockTag,
+    requireCanonical
+  });
+  if (code === concatHex(["0xef0100", authorization_ox.address]))
+    return await verifyErc1271(client, {
+      ...parameters,
+      signature
+    });
+  const authorization = {
+    address: authorization_ox.address,
+    chainId: Number(authorization_ox.chainId),
+    nonce: Number(authorization_ox.nonce),
+    r: numberToHex(authorization_ox.r, { size: 32 }),
+    s: numberToHex(authorization_ox.s, { size: 32 }),
+    yParity: authorization_ox.yParity
+  };
+  const valid = await verifyAuthorization({
+    address,
+    authorization
+  });
+  if (!valid)
+    throw new VerificationError();
+  const results = await getAction(client, readContract, "readContract")({
+    ...multicallAddress ? { address: multicallAddress } : { code: multicall3Bytecode },
+    authorizationList: [authorization],
+    abi: multicall3Abi,
+    blockHash,
+    blockNumber,
+    blockTag: "pending",
+    functionName: "aggregate3",
+    requireCanonical,
+    args: [
+      [
+        ...initData ? [
+          {
+            allowFailure: true,
+            target: to ?? address,
+            callData: initData
+          }
+        ] : [],
+        {
+          allowFailure: true,
+          target: address,
+          callData: encodeFunctionData({
+            abi: erc1271Abi,
+            functionName: "isValidSignature",
+            args: [hash3, signature]
+          })
+        }
+      ]
+    ]
+  });
+  const data = results[results.length - 1]?.returnData;
+  if (data?.startsWith("0x1626ba7e"))
+    return true;
+  throw new VerificationError();
+}
+async function verifyErc6492(client, parameters) {
+  const { address, factory, factoryData, hash: hash3, signature, verifierAddress, ...rest } = parameters;
+  const wrappedSignature = await (async () => {
+    if (!factory && !factoryData)
+      return signature;
+    if (SignatureErc6492_exports.validate(signature))
+      return signature;
+    return SignatureErc6492_exports.wrap({
+      data: factoryData,
+      signature,
+      to: factory
+    });
+  })();
+  const args = verifierAddress ? {
+    to: verifierAddress,
+    data: encodeFunctionData({
+      abi: erc6492SignatureValidatorAbi,
+      functionName: "isValidSig",
+      args: [address, hash3, wrappedSignature]
+    }),
+    ...rest
+  } : {
+    data: encodeDeployData({
+      abi: erc6492SignatureValidatorAbi,
+      args: [address, hash3, wrappedSignature],
+      bytecode: erc6492SignatureValidatorByteCode
+    }),
+    ...rest
+  };
+  const { data } = await getAction(client, call, "call")(args).catch((error) => {
+    if (error instanceof CallExecutionError)
+      throw new VerificationError();
+    throw error;
+  });
+  if (hexToBool(data ?? "0x0"))
+    return true;
+  throw new VerificationError();
+}
+async function verifyErc1271(client, parameters) {
+  const { address, blockHash, blockNumber, blockTag, hash: hash3, requireCanonical, signature } = parameters;
+  const result = await getAction(client, readContract, "readContract")({
+    address,
+    abi: erc1271Abi,
+    args: [hash3, signature],
+    blockHash,
+    blockNumber,
+    blockTag,
+    functionName: "isValidSignature",
+    requireCanonical
+  }).catch((error) => {
+    if (error instanceof ContractFunctionExecutionError)
+      throw new VerificationError();
+    throw error;
+  });
+  if (result.startsWith("0x1626ba7e"))
+    return true;
+  throw new VerificationError();
+}
+var VerificationError = class extends Error {
+};
+
+// node_modules/viem/_esm/actions/public/verifyMessage.js
+async function verifyMessage(client, { address, message, factory, factoryData, signature, ...callRequest }) {
+  const hash3 = hashMessage(message);
+  return getAction(client, verifyHash, "verifyHash")({
+    address,
+    factory,
+    factoryData,
+    hash: hash3,
+    signature,
+    ...callRequest
+  });
+}
+
+// node_modules/viem/_esm/actions/public/verifyTypedData.js
+async function verifyTypedData(client, parameters) {
+  const { address, factory, factoryData, signature, message, primaryType, types, domain, ...callRequest } = parameters;
+  const hash3 = hashTypedData({ message, primaryType, types, domain });
+  return getAction(client, verifyHash, "verifyHash")({
+    address,
+    factory,
+    factoryData,
+    hash: hash3,
+    signature,
+    ...callRequest
+  });
+}
+
+// node_modules/viem/_esm/actions/public/waitForTransactionReceipt.js
+init_transaction();
+init_withResolvers();
+init_stringify();
+
+// node_modules/viem/_esm/actions/public/watchBlockNumber.js
+init_fromHex();
+init_stringify();
+function watchBlockNumber(client, { emitOnBegin = false, emitMissed = false, onBlockNumber, onError, poll: poll_, pollingInterval = client.pollingInterval }) {
+  const enablePolling = (() => {
+    if (typeof poll_ !== "undefined")
+      return poll_;
+    if (client.transport.type === "webSocket" || client.transport.type === "ipc")
+      return false;
+    if (client.transport.type === "fallback" && (client.transport.transports[0].config.type === "webSocket" || client.transport.transports[0].config.type === "ipc"))
+      return false;
+    return true;
+  })();
+  let prevBlockNumber;
+  const pollBlockNumber = () => {
+    const observerId = stringify([
+      "watchBlockNumber",
+      client.uid,
+      emitOnBegin,
+      emitMissed,
+      pollingInterval
+    ]);
+    return observe(observerId, { onBlockNumber, onError }, (emit) => poll(async () => {
+      try {
+        const blockNumber = await getAction(client, getBlockNumber, "getBlockNumber")({ cacheTime: 0 });
+        if (prevBlockNumber !== void 0) {
+          if (blockNumber === prevBlockNumber)
+            return;
+          if (blockNumber - prevBlockNumber > 1 && emitMissed) {
+            for (let i = prevBlockNumber + 1n; i < blockNumber; i++) {
+              emit.onBlockNumber(i, prevBlockNumber);
+              prevBlockNumber = i;
+            }
+          }
+        }
+        if (prevBlockNumber === void 0 || blockNumber > prevBlockNumber) {
+          emit.onBlockNumber(blockNumber, prevBlockNumber);
+          prevBlockNumber = blockNumber;
+        }
+      } catch (err) {
+        emit.onError?.(err);
+      }
+    }, {
+      emitOnBegin,
+      interval: pollingInterval
+    }));
+  };
+  const subscribeBlockNumber = () => {
+    const observerId = stringify([
+      "watchBlockNumber",
+      client.uid,
+      emitOnBegin,
+      emitMissed
+    ]);
+    return observe(observerId, { onBlockNumber, onError }, (emit) => {
+      let active = true;
+      let unsubscribe = () => active = false;
+      (async () => {
+        try {
+          const transport = (() => {
+            if (client.transport.type === "fallback") {
+              const transport2 = client.transport.transports.find((transport3) => transport3.config.type === "webSocket" || transport3.config.type === "ipc");
+              if (!transport2)
+                return client.transport;
+              return transport2.value;
+            }
+            return client.transport;
+          })();
+          const { unsubscribe: unsubscribe_ } = await transport.subscribe({
+            params: ["newHeads"],
+            onData(data) {
+              if (!active)
+                return;
+              const blockNumber = hexToBigInt(data.result?.number);
+              emit.onBlockNumber(blockNumber, prevBlockNumber);
+              prevBlockNumber = blockNumber;
+            },
+            onError(error) {
+              emit.onError?.(error);
+            }
+          });
+          unsubscribe = unsubscribe_;
+          if (!active)
+            unsubscribe();
+        } catch (err) {
+          onError?.(err);
+        }
+      })();
+      return () => unsubscribe();
+    });
+  };
+  return enablePolling ? pollBlockNumber() : subscribeBlockNumber();
+}
+
+// node_modules/viem/_esm/actions/public/waitForTransactionReceipt.js
+async function waitForTransactionReceipt(client, parameters) {
+  const {
+    checkReplacement = client.chain?.supportsTransactionReplacementDetection ?? true,
+    confirmations = 1,
+    hash: hash3,
+    onReplaced,
+    retryCount = 6,
+    retryDelay = ({ count }) => ~~(1 << count) * 200,
+    // exponential backoff
+    timeout = 18e4
+  } = parameters;
+  const observerId = stringify(["waitForTransactionReceipt", client.uid, hash3]);
+  const pollingInterval = (() => {
+    if (parameters.pollingInterval)
+      return parameters.pollingInterval;
+    if (client.chain?.experimental_preconfirmationTime)
+      return client.chain.experimental_preconfirmationTime;
+    return client.pollingInterval;
+  })();
+  let transaction;
+  let replacedTransaction;
+  let receipt;
+  let retrying = false;
+  let _unobserve;
+  let _unwatch;
+  const { promise, resolve, reject } = withResolvers();
+  const timer = timeout ? setTimeout(() => {
+    _unwatch?.();
+    _unobserve?.();
+    reject(new WaitForTransactionReceiptTimeoutError({ hash: hash3 }));
+  }, timeout) : void 0;
+  _unobserve = observe(observerId, { onReplaced, resolve, reject }, async (emit) => {
+    receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({ hash: hash3 }).catch(() => void 0);
+    if (receipt && confirmations <= 1) {
+      clearTimeout(timer);
+      emit.resolve(receipt);
+      _unobserve?.();
+      return;
+    }
+    _unwatch = getAction(client, watchBlockNumber, "watchBlockNumber")({
+      emitMissed: true,
+      emitOnBegin: true,
+      poll: true,
+      pollingInterval,
+      async onBlockNumber(blockNumber_) {
+        const done = (fn) => {
+          clearTimeout(timer);
+          _unwatch?.();
+          fn();
+          _unobserve?.();
+        };
+        let blockNumber = blockNumber_;
+        if (retrying)
+          return;
+        try {
+          if (receipt) {
+            if (confirmations > 1 && (!receipt.blockNumber || blockNumber - receipt.blockNumber + 1n < confirmations))
+              return;
+            done(() => emit.resolve(receipt));
+            return;
+          }
+          if (checkReplacement && !transaction) {
+            retrying = true;
+            await withRetry(async () => {
+              transaction = await getAction(client, getTransaction, "getTransaction")({ hash: hash3 });
+              if (transaction.blockNumber)
+                blockNumber = transaction.blockNumber;
+            }, {
+              delay: retryDelay,
+              retryCount
+            });
+            retrying = false;
+          }
+          receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({ hash: hash3 });
+          if (confirmations > 1 && (!receipt.blockNumber || blockNumber - receipt.blockNumber + 1n < confirmations))
+            return;
+          done(() => emit.resolve(receipt));
+        } catch (err) {
+          if (err instanceof TransactionNotFoundError || err instanceof TransactionReceiptNotFoundError) {
+            if (!transaction) {
+              retrying = false;
+              return;
+            }
+            try {
+              replacedTransaction = transaction;
+              retrying = true;
+              const block = await withRetry(() => getAction(client, getBlock, "getBlock")({
+                blockNumber,
+                includeTransactions: true
+              }), {
+                delay: retryDelay,
+                retryCount,
+                shouldRetry: ({ error }) => error instanceof BlockNotFoundError
+              });
+              retrying = false;
+              const replacementTransaction = block.transactions.find(({ from: from16, nonce }) => from16 === replacedTransaction.from && nonce === replacedTransaction.nonce);
+              if (!replacementTransaction)
+                return;
+              receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({
+                hash: replacementTransaction.hash
+              });
+              if (confirmations > 1 && (!receipt.blockNumber || blockNumber - receipt.blockNumber + 1n < confirmations))
+                return;
+              let reason = "replaced";
+              if (replacementTransaction.to === replacedTransaction.to && replacementTransaction.value === replacedTransaction.value && replacementTransaction.input === replacedTransaction.input) {
+                reason = "repriced";
+              } else if (replacementTransaction.from === replacementTransaction.to && replacementTransaction.value === 0n) {
+                reason = "cancelled";
+              }
+              done(() => {
+                emit.onReplaced?.({
+                  reason,
+                  replacedTransaction,
+                  transaction: replacementTransaction,
+                  transactionReceipt: receipt
+                });
+                emit.resolve(receipt);
+              });
+            } catch (err_) {
+              done(() => emit.reject(err_));
+            }
+          } else {
+            done(() => emit.reject(err));
+          }
+        }
+      }
+    });
+  });
+  return promise;
+}
+
+// node_modules/viem/_esm/actions/public/watchBlockHeaders.js
+init_stringify();
+var blockFields = [
+  "size",
+  "totalDifficulty",
+  "transactions",
+  "uncles",
+  "withdrawals"
+];
+function watchBlockHeaders(client, { onBlockHeader, onError }) {
+  let prevBlockHeader;
+  const observerId = stringify(["watchBlockHeaders", client.uid]);
+  return observe(observerId, { onBlockHeader, onError }, (emit) => {
+    let active = true;
+    let subscribed = false;
+    let unsubscribe = () => active = false;
+    (async () => {
+      try {
+        const transport = (() => {
+          if (client.transport.type === "fallback") {
+            const transport2 = client.transport.transports.find((transport3) => transport3.config.type === "webSocket" || transport3.config.type === "ipc");
+            if (!transport2)
+              return client.transport;
+            return transport2.value;
+          }
+          return client.transport;
+        })();
+        const { unsubscribe: unsubscribe_ } = await transport.subscribe({
+          params: ["newHeads"],
+          onData(data) {
+            if (!active)
+              return;
+            const blockHeader = (client.chain?.formatters?.block?.format || formatBlock)(data.result, "watchBlockHeaders");
+            for (const field of blockFields)
+              delete blockHeader[field];
+            emit.onBlockHeader(blockHeader, prevBlockHeader);
+            prevBlockHeader = blockHeader;
+          },
+          onError(error) {
+            if (subscribed)
+              emit.onError?.(error);
+          }
+        });
+        subscribed = true;
+        unsubscribe = unsubscribe_;
+        if (!active)
+          unsubscribe();
+      } catch (err) {
+        emit.onError?.(err);
+      }
+    })();
+    return () => unsubscribe();
+  });
+}
+
+// node_modules/viem/_esm/actions/public/watchBlocks.js
+init_stringify();
+function watchBlocks(client, { blockTag = client.experimental_blockTag ?? "latest", emitMissed = false, emitOnBegin = false, onBlock, onError, includeTransactions: includeTransactions_, poll: poll_, pollingInterval = client.pollingInterval }) {
+  const enablePolling = (() => {
+    if (typeof poll_ !== "undefined")
+      return poll_;
+    if (client.transport.type === "webSocket" || client.transport.type === "ipc")
+      return false;
+    if (client.transport.type === "fallback" && (client.transport.transports[0].config.type === "webSocket" || client.transport.transports[0].config.type === "ipc"))
+      return false;
+    return true;
+  })();
+  const includeTransactions = includeTransactions_ ?? false;
+  let prevBlock;
+  const pollBlocks = () => {
+    const observerId = stringify([
+      "watchBlocks",
+      client.uid,
+      blockTag,
+      emitMissed,
+      emitOnBegin,
+      includeTransactions,
+      pollingInterval
+    ]);
+    return observe(observerId, { onBlock, onError }, (emit) => poll(async () => {
+      try {
+        const block = await getAction(client, getBlock, "getBlock")({
+          blockTag,
+          includeTransactions
+        });
+        if (block.number !== null && prevBlock?.number != null) {
+          if (block.number === prevBlock.number)
+            return;
+          if (block.number - prevBlock.number > 1 && emitMissed) {
+            for (let i = prevBlock?.number + 1n; i < block.number; i++) {
+              const block2 = await getAction(client, getBlock, "getBlock")({
+                blockNumber: i,
+                includeTransactions
+              });
+              emit.onBlock(block2, prevBlock);
+              prevBlock = block2;
+            }
+          }
+        }
+        if (
+          // If no previous block exists, emit.
+          prevBlock?.number == null || // If the block tag is "pending" with no block number, emit.
+          blockTag === "pending" && block?.number == null || // If the next block number is greater than the previous block number, emit.
+          // We don't want to emit blocks in the past.
+          block.number !== null && block.number > prevBlock.number
+        ) {
+          emit.onBlock(block, prevBlock);
+          prevBlock = block;
+        }
+      } catch (err) {
+        emit.onError?.(err);
+      }
+    }, {
+      emitOnBegin,
+      interval: pollingInterval
+    }));
+  };
+  const subscribeBlocks = () => {
+    let active = true;
+    let emitFetched = true;
+    let unsubscribe = () => active = false;
+    (async () => {
+      try {
+        if (emitOnBegin) {
+          getAction(client, getBlock, "getBlock")({
+            blockTag,
+            includeTransactions
+          }).then((block) => {
+            if (!active)
+              return;
+            if (!emitFetched)
+              return;
+            onBlock(block, void 0);
+            emitFetched = false;
+          }).catch(onError);
+        }
+        const transport = (() => {
+          if (client.transport.type === "fallback") {
+            const transport2 = client.transport.transports.find((transport3) => transport3.config.type === "webSocket" || transport3.config.type === "ipc");
+            if (!transport2)
+              return client.transport;
+            return transport2.value;
+          }
+          return client.transport;
+        })();
+        const { unsubscribe: unsubscribe_ } = await transport.subscribe({
+          params: ["newHeads"],
+          async onData(data) {
+            if (!active)
+              return;
+            const block = await getAction(client, getBlock, "getBlock")({
+              blockNumber: data.result?.number,
+              includeTransactions
+            }).catch(() => {
+            });
+            if (!active)
+              return;
+            onBlock(block, prevBlock);
+            emitFetched = false;
+            prevBlock = block;
+          },
+          onError(error) {
+            onError?.(error);
+          }
+        });
+        unsubscribe = unsubscribe_;
+        if (!active)
+          unsubscribe();
+      } catch (err) {
+        onError?.(err);
+      }
+    })();
+    return () => unsubscribe();
+  };
+  return enablePolling ? pollBlocks() : subscribeBlocks();
+}
+
+// node_modules/viem/_esm/actions/public/watchEvent.js
+init_abi();
+init_rpc();
+init_stringify();
+function watchEvent(client, { address, args, batch = true, event, events, fromBlock, onError, onLogs, poll: poll_, pollingInterval = client.pollingInterval, strict: strict_ }) {
+  const enablePolling = (() => {
+    if (typeof poll_ !== "undefined")
+      return poll_;
+    if (typeof fromBlock === "bigint")
+      return true;
+    if (client.transport.type === "webSocket" || client.transport.type === "ipc")
+      return false;
+    if (client.transport.type === "fallback" && (client.transport.transports[0].config.type === "webSocket" || client.transport.transports[0].config.type === "ipc"))
+      return false;
+    return true;
+  })();
+  const strict = strict_ ?? false;
+  const pollEvent = () => {
+    const observerId = stringify([
+      "watchEvent",
+      address,
+      args,
+      batch,
+      client.uid,
+      event,
+      pollingInterval,
+      fromBlock
+    ]);
+    return observe(observerId, { onLogs, onError }, (emit) => {
+      let previousBlockNumber;
+      if (fromBlock !== void 0)
+        previousBlockNumber = fromBlock - 1n;
+      let filter;
+      let initialized = false;
+      const unwatch = poll(async () => {
+        if (!initialized) {
+          try {
+            filter = await getAction(client, createEventFilter, "createEventFilter")({
+              address,
+              args,
+              event,
+              events,
+              strict,
+              fromBlock
+            });
+          } catch {
+          }
+          initialized = true;
+          return;
+        }
+        try {
+          let logs;
+          if (filter) {
+            logs = await getAction(client, getFilterChanges, "getFilterChanges")({ filter });
+          } else {
+            const blockNumber = await getAction(client, getBlockNumber, "getBlockNumber")({});
+            if (previousBlockNumber && previousBlockNumber !== blockNumber) {
+              logs = await getAction(client, getLogs, "getLogs")({
+                address,
+                args,
+                event,
+                events,
+                fromBlock: previousBlockNumber + 1n,
+                toBlock: blockNumber
+              });
+            } else {
+              logs = [];
+            }
+            previousBlockNumber = blockNumber;
+          }
+          if (logs.length === 0)
+            return;
+          if (batch)
+            emit.onLogs(logs);
+          else
+            for (const log of logs)
+              emit.onLogs([log]);
+        } catch (err) {
+          if (filter && err instanceof InvalidInputRpcError)
+            initialized = false;
+          emit.onError?.(err);
+        }
+      }, {
+        emitOnBegin: true,
+        interval: pollingInterval
+      });
+      return async () => {
+        if (filter)
+          await getAction(client, uninstallFilter, "uninstallFilter")({ filter });
+        unwatch();
+      };
+    });
+  };
+  const subscribeEvent = () => {
+    let active = true;
+    let unsubscribe = () => active = false;
+    (async () => {
+      try {
+        const transport = (() => {
+          if (client.transport.type === "fallback") {
+            const transport2 = client.transport.transports.find((transport3) => transport3.config.type === "webSocket" || transport3.config.type === "ipc");
+            if (!transport2)
+              return client.transport;
+            return transport2.value;
+          }
+          return client.transport;
+        })();
+        const events_ = events ?? (event ? [event] : void 0);
+        let topics = [];
+        if (events_) {
+          const encoded = events_.flatMap((event2) => encodeEventTopics({
+            abi: [event2],
+            eventName: event2.name,
+            args
+          }));
+          topics = [encoded];
+          if (event)
+            topics = topics[0];
+        }
+        const { unsubscribe: unsubscribe_ } = await transport.subscribe({
+          params: ["logs", { address, topics }],
+          onData(data) {
+            if (!active)
+              return;
+            const log = data.result;
+            try {
+              const { eventName, args: args2 } = decodeEventLog({
+                abi: events_ ?? [],
+                data: log.data,
+                topics: log.topics,
+                strict
+              });
+              const formatted = formatLog(log, { args: args2, eventName });
+              onLogs([formatted]);
+            } catch (err) {
+              let eventName;
+              let isUnnamed;
+              if (err instanceof DecodeLogDataMismatch || err instanceof DecodeLogTopicsMismatch) {
+                if (strict_)
+                  return;
+                eventName = err.abiItem.name;
+                isUnnamed = err.abiItem.inputs?.some((x) => !("name" in x && x.name));
+              }
+              const formatted = formatLog(log, {
+                args: isUnnamed ? [] : {},
+                eventName
+              });
+              onLogs([formatted]);
+            }
+          },
+          onError(error) {
+            onError?.(error);
+          }
+        });
+        unsubscribe = unsubscribe_;
+        if (!active)
+          unsubscribe();
+      } catch (err) {
+        onError?.(err);
+      }
+    })();
+    return () => unsubscribe();
+  };
+  return enablePolling ? pollEvent() : subscribeEvent();
+}
+
+// node_modules/viem/_esm/actions/public/watchPendingTransactions.js
+init_stringify();
+function watchPendingTransactions(client, { batch = true, onError, onTransactions, poll: poll_, pollingInterval = client.pollingInterval }) {
+  const enablePolling = typeof poll_ !== "undefined" ? poll_ : client.transport.type !== "webSocket" && client.transport.type !== "ipc";
+  const pollPendingTransactions = () => {
+    const observerId = stringify([
+      "watchPendingTransactions",
+      client.uid,
+      batch,
+      pollingInterval
+    ]);
+    return observe(observerId, { onTransactions, onError }, (emit) => {
+      let filter;
+      const unwatch = poll(async () => {
+        try {
+          if (!filter) {
+            try {
+              filter = await getAction(client, createPendingTransactionFilter, "createPendingTransactionFilter")({});
+              return;
+            } catch (err) {
+              unwatch();
+              throw err;
+            }
+          }
+          const hashes = await getAction(client, getFilterChanges, "getFilterChanges")({ filter });
+          if (hashes.length === 0)
+            return;
+          if (batch)
+            emit.onTransactions(hashes);
+          else
+            for (const hash3 of hashes)
+              emit.onTransactions([hash3]);
+        } catch (err) {
+          emit.onError?.(err);
+        }
+      }, {
+        emitOnBegin: true,
+        interval: pollingInterval
+      });
+      return async () => {
+        if (filter)
+          await getAction(client, uninstallFilter, "uninstallFilter")({ filter });
+        unwatch();
+      };
+    });
+  };
+  const subscribePendingTransactions = () => {
+    let active = true;
+    let unsubscribe = () => active = false;
+    (async () => {
+      try {
+        const { unsubscribe: unsubscribe_ } = await client.transport.subscribe({
+          params: ["newPendingTransactions"],
+          onData(data) {
+            if (!active)
+              return;
+            const transaction = data.result;
+            onTransactions([transaction]);
+          },
+          onError(error) {
+            onError?.(error);
+          }
+        });
+        unsubscribe = unsubscribe_;
+        if (!active)
+          unsubscribe();
+      } catch (err) {
+        onError?.(err);
+      }
+    })();
+    return () => unsubscribe();
+  };
+  return enablePolling ? pollPendingTransactions() : subscribePendingTransactions();
+}
+
+// node_modules/viem/_esm/utils/siwe/parseSiweMessage.js
+var siweDateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+function isValidSiweDateTime(value) {
+  if (!siweDateTimeRegex.test(value))
+    return false;
+  return !Number.isNaN(new Date(value).getTime());
+}
+function parseSiweDateTime(value) {
+  if (!isValidSiweDateTime(value))
+    return new Date(Number.NaN);
+  return new Date(value);
+}
+function parseSiweMessage(message) {
+  const { scheme, statement, ...prefix } = message.match(prefixRegex)?.groups ?? {};
+  const { chainId, expirationTime, issuedAt, notBefore, requestId, ...suffix } = message.match(suffixRegex)?.groups ?? {};
+  const resources = message.split("Resources:")[1]?.split("\n- ").slice(1);
+  return {
+    ...prefix,
+    ...suffix,
+    ...chainId ? { chainId: Number(chainId) } : {},
+    ...expirationTime ? { expirationTime: parseSiweDateTime(expirationTime) } : {},
+    ...issuedAt ? { issuedAt: parseSiweDateTime(issuedAt) } : {},
+    ...notBefore ? { notBefore: parseSiweDateTime(notBefore) } : {},
+    ...requestId ? { requestId } : {},
+    ...resources ? { resources } : {},
+    ...scheme ? { scheme } : {},
+    ...statement ? { statement } : {}
+  };
+}
+var prefixRegex = /^(?:(?<scheme>[a-zA-Z][a-zA-Z0-9+-.]*):\/\/)?(?<domain>[a-zA-Z0-9+-.]*(?::[0-9]{1,5})?) (?:wants you to sign in with your Ethereum account:\n)(?<address>0x[a-fA-F0-9]{40})\n\n(?:(?<statement>.*)\n\n)?/;
+var suffixRegex = /(?:URI: (?<uri>.+))\n(?:Version: (?<version>.+))\n(?:Chain ID: (?<chainId>\d+))\n(?:Nonce: (?<nonce>[a-zA-Z0-9]+))\n(?:Issued At: (?<issuedAt>.+))(?:\nExpiration Time: (?<expirationTime>.+))?(?:\nNot Before: (?<notBefore>.+))?(?:\nRequest ID: (?<requestId>.+))?/;
+
+// node_modules/viem/_esm/utils/siwe/validateSiweMessage.js
+init_isAddress();
+init_isAddressEqual();
+function validateSiweMessage(parameters) {
+  const { address, domain, message, nonce, scheme, time = /* @__PURE__ */ new Date() } = parameters;
+  if (domain && message.domain !== domain)
+    return false;
+  if (nonce && message.nonce !== nonce)
+    return false;
+  if (scheme && message.scheme !== scheme)
+    return false;
+  if (Number.isNaN(time.getTime()))
+    return false;
+  if (message.expirationTime) {
+    if (Number.isNaN(message.expirationTime.getTime()))
+      return false;
+    if (time >= message.expirationTime)
+      return false;
+  }
+  if (message.notBefore) {
+    if (Number.isNaN(message.notBefore.getTime()))
+      return false;
+    if (time < message.notBefore)
+      return false;
+  }
+  try {
+    if (!message.address)
+      return false;
+    if (!isAddress(message.address, { strict: false }))
+      return false;
+    if (address && !isAddressEqual(message.address, address))
+      return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+// node_modules/viem/_esm/actions/siwe/verifySiweMessage.js
+async function verifySiweMessage(client, parameters) {
+  const { address, domain, message, nonce, scheme, signature, time = /* @__PURE__ */ new Date(), ...callRequest } = parameters;
+  const parsed = parseSiweMessage(message);
+  if (!parsed.address)
+    return false;
+  const isValid = validateSiweMessage({
+    address,
+    domain,
+    message: parsed,
+    nonce,
+    scheme,
+    time
+  });
+  if (!isValid)
+    return false;
+  const hash3 = hashMessage(message);
+  return verifyHash(client, {
+    address: parsed.address,
+    hash: hash3,
+    signature,
+    ...callRequest
+  });
+}
+
+// node_modules/viem/_esm/actions/token/approve.js
+init_abis();
+
+// node_modules/viem/_esm/actions/token/internal.js
+init_abis();
+init_isAddress();
+init_isAddressEqual();
+function toAmount(amount, decimals) {
+  return { amount, decimals, formatted: formatUnits(amount, decimals) };
+}
+function toBaseUnits(amount, decimals) {
+  if (typeof amount === "bigint")
+    return amount;
+  const resolved = amount.decimals ?? decimals;
+  return parseUnits(amount.formatted, requireTokenDecimals(resolved));
+}
+function requireTokenDecimals(decimals) {
+  if (decimals === void 0)
+    throw new Error("Token decimals are required. Pass `amount.decimals` or select a declared token.");
+  return decimals;
+}
+function resolveAmountDecimals(amount, decimals) {
+  if (typeof amount === "bigint")
+    return decimals;
+  return amount.decimals ?? decimals;
+}
+function resolveToken(client, parameters) {
+  const { decimals, token } = parameters;
+  const declared = findDeclaredToken(client, token);
+  if (declared)
+    return {
+      address: declared.address,
+      decimals: decimals ?? declared.decimals
+    };
+  if (isAddress(token, { strict: false }))
+    return {
+      address: token,
+      decimals: decimals ?? inferDecimals(client, token)
+    };
+  throw new Error(`Token "${token}" is not a declared ERC-20 token on the client's \`tokens\` array (with an address for the client's chain), and is not a valid address.`);
+}
+function findDeclaredToken(client, token) {
+  const tokens = client.tokens;
+  const chainId = client.chain?.id;
+  if (!tokens || chainId === void 0)
+    return void 0;
+  const bySymbol = findTokenBySymbol(tokens, token);
+  if (bySymbol)
+    return resolveTokenForChain(bySymbol, chainId);
+  if (isAddress(token, { strict: false }))
+    for (const token_ of tokens) {
+      const resolved = resolveTokenForChain(token_, chainId);
+      if (resolved && isAddressEqual(resolved.address, token))
+        return resolved;
+    }
+  return void 0;
+}
+function resolveTokenForChain(token, chainId) {
+  const address = token.addresses[chainId];
+  if (!address)
+    return void 0;
+  return {
+    address,
+    currency: token.currency,
+    decimals: token.decimals,
+    name: token.name,
+    popular: token.popular,
+    symbol: token.symbol
+  };
+}
+function findTokenBySymbol(tokens, symbol) {
+  const lowerSymbol = symbol.toLowerCase();
+  for (const token of tokens) {
+    if (token.symbol?.toLowerCase() === lowerSymbol)
+      return token;
+  }
+  return void 0;
+}
+function inferDecimals(client, address) {
+  const tokens = client.tokens;
+  const chainId = client.chain?.id;
+  if (tokens && chainId !== void 0)
+    for (const token of tokens) {
+      const resolved = resolveTokenForChain(token, chainId);
+      if (resolved && isAddressEqual(resolved.address, address))
+        return resolved.decimals;
+    }
+  return void 0;
+}
+async function resolveTokenWithDecimals(client, parameters) {
+  const { address, decimals } = resolveToken(client, parameters);
+  if (decimals !== void 0)
+    return { address, decimals };
+  return {
+    address,
+    decimals: await readContract(client, {
+      abi: erc20Abi,
+      address,
+      functionName: "decimals"
+    })
+  };
+}
+function pickWriteParameters(parameters) {
+  const { account, chain, gas, maxFeePerGas, maxPriorityFeePerGas, nonce } = parameters;
+  return { account, chain, gas, maxFeePerGas, maxPriorityFeePerGas, nonce };
+}
+function defineCall(call2) {
+  return {
+    ...call2,
+    data: encodeFunctionData(call2),
+    to: call2.address
+  };
+}
+
+// node_modules/viem/_esm/actions/token/approve.js
+async function approve(client, parameters) {
+  return approve.inner(writeContract, client, parameters);
+}
+(function(approve2) {
+  async function inner(action, client, parameters) {
+    return await action(client, {
+      ...parameters,
+      ...approve2.call(client, parameters)
+    });
+  }
+  approve2.inner = inner;
+  function call2(client, parameters) {
+    return defineCall(getCall(client, parameters));
+  }
+  approve2.call = call2;
+  async function estimateGas2(client, parameters) {
+    return estimateContractGas(client, {
+      ...pickWriteParameters(parameters),
+      ...approve2.call(client, parameters)
+    });
+  }
+  approve2.estimateGas = estimateGas2;
+  async function simulate(client, parameters) {
+    return simulateContract(client, {
+      ...pickWriteParameters(parameters),
+      ...approve2.call(client, parameters)
+    });
+  }
+  approve2.simulate = simulate;
+  function extractEvent(logs) {
+    const [log] = parseEventLogs({
+      abi: erc20Abi,
+      logs,
+      eventName: "Approval",
+      strict: true
+    });
+    if (!log)
+      throw new Error("`Approval` event not found.");
+    return log;
+  }
+  approve2.extractEvent = extractEvent;
+})(approve || (approve = {}));
+function getCall(client, parameters) {
+  const { amount, spender, token } = parameters;
+  const { address, decimals } = resolveToken(client, { token });
+  return {
+    abi: erc20Abi,
+    address,
+    args: [spender, toBaseUnits(amount, decimals)],
+    functionName: "approve"
+  };
+}
+
+// node_modules/viem/_esm/actions/wallet/sendTransactionSync.js
+init_parseAccount();
+init_base();
+init_transaction();
+init_concat();
+init_extract();
+init_transactionRequest();
+init_lru();
+init_assertRequest();
+
+// node_modules/viem/_esm/actions/wallet/sendRawTransactionSync.js
+init_transaction();
+async function sendRawTransactionSync(client, { serializedTransaction, throwOnReceiptRevert, timeout }) {
+  const receipt = await client.request({
+    method: "eth_sendRawTransactionSync",
+    params: timeout ? [serializedTransaction, timeout] : [serializedTransaction]
+  }, { retryCount: 0 });
+  const format2 = client.chain?.formatters?.transactionReceipt?.format || formatTransactionReceipt;
+  const formatted = format2(receipt);
+  if (formatted.status === "reverted" && throwOnReceiptRevert)
+    throw new TransactionReceiptRevertedError({ receipt: formatted });
+  return formatted;
+}
+
+// node_modules/viem/_esm/actions/wallet/sendTransactionSync.js
+var supportsWalletNamespace2 = new LruMap(128);
+async function sendTransactionSync(client, parameters) {
+  const { account: account_ = client.account, assertChainId = true, chain = client.chain, accessList, authorizationList, blobs, data, dataSuffix = typeof client.dataSuffix === "string" ? client.dataSuffix : client.dataSuffix?.value, gas, gasPrice, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, nonce, pollingInterval, throwOnReceiptRevert, type, value, ...rest } = parameters;
+  const timeout = parameters.timeout ?? Math.max((chain?.blockTime ?? 0) * 3, 5e3);
+  if (typeof account_ === "undefined")
+    throw new AccountNotFoundError({
+      docsPath: "/docs/actions/wallet/sendTransactionSync"
+    });
+  const account = account_ ? parseAccount(account_) : null;
+  let nonceManagerParameters;
+  try {
+    assertRequest(parameters);
+    const to = await (async () => {
+      if (parameters.to)
+        return parameters.to;
+      if (parameters.to === null)
+        return void 0;
+      if (authorizationList && authorizationList.length > 0)
+        return await recoverAuthorizationAddress({
+          authorization: authorizationList[0]
+        }).catch(() => {
+          throw new BaseError2("`to` is required. Could not infer from `authorizationList`.");
+        });
+      return void 0;
+    })();
+    if (account?.type === "json-rpc" || account === null) {
+      let chainId;
+      if (chain !== null) {
+        chainId = await getAction(client, getChainId, "getChainId")({});
+        if (assertChainId)
+          assertCurrentChain({
+            currentChainId: chainId,
             chain
           });
       }
@@ -35112,6 +37856,7 @@ var createPublicClient2 = (chainConfig, customTransport) => {
 // frontend/src/app.js
 var STUDIONET_CHAIN_ID = "0xf22f";
 var REPOSEAL_CONTRACT_ADDRESS = "0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F";
+var LIVE_VERIFICATION_ID = "verify-1";
 var STUDIONET_CHAIN = {
   chainId: STUDIONET_CHAIN_ID,
   chainName: "GenLayer Studionet",
@@ -35186,6 +37931,11 @@ async function sendWrite(functionName, args) {
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 }
+function formatTimestamp(value) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return "\u2014";
+  return new Date(seconds * 1e3).toISOString().replace("T", " ").replace(".000Z", " UTC");
+}
 function renderRecord(record) {
   if (!record) {
     $("record-card").innerHTML = '<div class="empty-state"><span class="empty-icon">\u2301</span><p>No verification loaded.</p><small>Register a commit, then paste its ID here.</small></div>';
@@ -35200,8 +37950,11 @@ function renderRecord(record) {
       <div class="record-field"><span class="record-label">SCORE</span><span class="record-value">${escapeHtml(record.score)} / 100</span></div>
       <div class="record-field"><span class="record-label">LICENSE</span><span class="record-value">${escapeHtml(record.declared_license)}</span></div>
       <div class="record-field"><span class="record-label">RECHECKS</span><span class="record-value">${escapeHtml(record.recheck_count)}</span></div>
+      <div class="record-field"><span class="record-label">CHECKED</span><span class="record-value">${escapeHtml(formatTimestamp(record.checked_at))}</span></div>
+      <div class="record-field"><span class="record-label">CREATED</span><span class="record-value">${escapeHtml(formatTimestamp(record.created_at))}</span></div>
     </div>
     <div class="record-reason">${escapeHtml(record.reason || "Awaiting analysis.")}</div>
+    ${record.findings ? `<div class="record-findings"><span class="record-label">VALIDATOR FINDINGS</span><p>${escapeHtml(record.findings)}</p></div>` : ""}
     <div class="record-evidence">${evidence || '<span class="record-label">No evidence URLs stored yet.</span>'}</div>`;
 }
 async function loadRecord() {
@@ -35302,3 +38055,8 @@ if (window.ethereum) {
     activity("Network changed. Reconnect to Studionet before writing.");
   });
 }
+if (!$("verification-id").value.trim()) $("verification-id").value = LIVE_VERIFICATION_ID;
+loadRecord().catch((error) => {
+  renderRecord(null);
+  activity(`Live record could not load automatically: ${error.message || "read unavailable"}. You can retry without connecting a wallet.`);
+});

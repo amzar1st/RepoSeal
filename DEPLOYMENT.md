@@ -6,9 +6,22 @@
 - Consensus mode: `Normal (Full Consensus)`
 - Contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
 - Transaction: `0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8`
-- Smoke test: `get_verification_count()` returned `0` from accepted state.
+- Original smoke test: `get_verification_count()` returned `0` from accepted state.
 - Contract explorer: https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F
 - Transaction explorer: https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8
+
+## Completed full-consensus verification
+
+- Verification ID: `verify-1`
+- Repository: `https://github.com/amzar1st/RepoSeal`
+- Commit: `ab4dbd9f85b03cb7f2e7da1ada9ef28b822a9e9b`
+- Create transaction: `0x6313953207e44d81f593c9b91fa35c187c70aa77f59683ff53979fbf0a764a33` (`FINALIZED`)
+- Analyze transaction: `0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296` (`FINALIZED`)
+- Stored verdict: `INCONCLUSIVE`
+- Score: `55/100`
+- Checked at: `2026-09-06T16:32:48Z`
+
+The validators verified the pinned commit, an exact MIT license match, the README, and compatible license metadata for the resolvable npm/PyPI dependencies. They returned `INCONCLUSIVE` because the registry requests generated for `genlayer-py`, `genlayer-test`, and `genvm-linter` Git dependencies returned `404`, preventing all direct dependency licenses from being identified. This is a completed verdict, not a pending or smoke-test-only claim.
 
 ## Contract
 

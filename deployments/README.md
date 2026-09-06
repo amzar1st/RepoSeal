@@ -1,1 +1,1 @@
-The checked-in `studionet.json` is intentionally empty until the contract is deployed. Update it with the real contract address and transaction hash after a successful GenLayer Studio deployment.
+`studionet.json` is the canonical Studionet release record. It contains the finalized deployment, the original read smoke test, and the first completed full-consensus repository verification with its exact transaction hashes and stored verdict.

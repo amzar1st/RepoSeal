@@ -35,7 +35,8 @@
             <div class="signal-line"><span>CONSENSUS INPUT</span><span class="mono">public evidence</span></div>
             <div class="signal-line"><span>PINNED UNIT</span><span class="mono">commit hash</span></div>
             <div class="signal-line"><span>STORED OUTPUT</span><span class="mono">verdict + proof URLs</span></div>
-            <div class="signal-footer"><span class="pulse"></span><span>Evidence stays inspectable.</span></div>
+            <div class="signal-line"><span>LIVE RECORD</span><span class="mono">verify-1 · finalized</span></div>
+            <div class="signal-footer"><span class="pulse"></span><a href="https://explorer-studio.genlayer.com/tx/0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296" target="_blank" rel="noreferrer">Inspect consensus proof ↗</a></div>
           </div>
         </section>
 
@@ -65,11 +66,11 @@
               <button class="ghost-button" id="save-contract" type="button">Save</button>
             </div>
             <div class="lookup-row">
-              <label>Verification ID<input id="verification-id" class="mono-input" type="text" placeholder="verify-1" /></label>
+              <label>Verification ID<input id="verification-id" class="mono-input" type="text" value="verify-1" placeholder="verify-1" /></label>
               <button class="secondary-button" id="load-verification" type="button">Load record</button>
             </div>
             <div class="record-card" id="record-card">
-              <div class="empty-state"><span class="empty-icon">⌁</span><p>No verification loaded.</p><small>Register a commit, then paste its ID here.</small></div>
+              <div class="empty-state"><span class="empty-icon">⌁</span><p>Loading finalized live proof…</p><small>Public reads do not require a wallet.</small></div>
             </div>
             <div class="action-row">
               <button class="secondary-button" id="analyze-verification" type="button">Analyze with consensus</button>
@@ -84,7 +85,7 @@
         </section>
 
         <section class="activity-strip">
-          <div><span class="eyebrow">ACTIVITY</span><span id="activity-message">Connect a wallet to begin.</span></div>
+          <div><span class="eyebrow">ACTIVITY</span><span id="activity-message">Loading verify-1 from finalized state…</span></div>
           <div class="tx-link" id="tx-link"></div>
         </section>
       </main>

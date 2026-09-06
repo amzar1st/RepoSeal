@@ -37,7 +37,9 @@ npm run build
 
 Open `dist/index.html` from a static host, connect MetaMask to Studionet, and use the console. The production Studionet contract address is preconfigured and can still be replaced from the console when testing another deployment.
 
-Live DApp: https://reposeal.amzar1st96.chatgpt.site
+Public live DApp: https://reposeal.amzar1st96.chatgpt.site
+
+The page preloads finalized record `verify-1` without requiring a wallet. MetaMask is required only for signed create, analyze, and recheck transactions.
 
 ## Local contract validation
 
@@ -62,6 +64,16 @@ RepoSeal targets GenLayer Studionet: chain ID `61999`, native token `GEN`, RPC `
 - Contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
 - Deployment transaction: `0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8`
 - Explorer: https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F
+
+## Finalized live verification
+
+- Verification ID: `verify-1`
+- Repository commit: `ab4dbd9f85b03cb7f2e7da1ada9ef28b822a9e9b`
+- Create transaction: `0x6313953207e44d81f593c9b91fa35c187c70aa77f59683ff53979fbf0a764a33`
+- Analysis transaction: `0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296`
+- Consensus verdict: `INCONCLUSIVE` (`55/100`)
+
+The result demonstrates the contract's fail-closed behavior: the exact commit and MIT license were verified, but three Git-based Python dependencies could not be resolved through PyPI, so validators did not claim full compliance.
 
 ## License
 

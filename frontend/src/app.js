@@ -4,6 +4,7 @@ import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 
 const STUDIONET_CHAIN_ID = "0xf22f";
 const REPOSEAL_CONTRACT_ADDRESS = "0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F";
+const LIVE_VERIFICATION_ID = "verify-1";
 const STUDIONET_CHAIN = {
   chainId: STUDIONET_CHAIN_ID,
   chainName: "GenLayer Studionet",
@@ -87,6 +88,12 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
 }
 
+function formatTimestamp(value) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  return new Date(seconds * 1000).toISOString().replace("T", " ").replace(".000Z", " UTC");
+}
+
 function renderRecord(record) {
   if (!record) {
     $("record-card").innerHTML = '<div class="empty-state"><span class="empty-icon">⌁</span><p>No verification loaded.</p><small>Register a commit, then paste its ID here.</small></div>';
@@ -101,8 +108,11 @@ function renderRecord(record) {
       <div class="record-field"><span class="record-label">SCORE</span><span class="record-value">${escapeHtml(record.score)} / 100</span></div>
       <div class="record-field"><span class="record-label">LICENSE</span><span class="record-value">${escapeHtml(record.declared_license)}</span></div>
       <div class="record-field"><span class="record-label">RECHECKS</span><span class="record-value">${escapeHtml(record.recheck_count)}</span></div>
+      <div class="record-field"><span class="record-label">CHECKED</span><span class="record-value">${escapeHtml(formatTimestamp(record.checked_at))}</span></div>
+      <div class="record-field"><span class="record-label">CREATED</span><span class="record-value">${escapeHtml(formatTimestamp(record.created_at))}</span></div>
     </div>
     <div class="record-reason">${escapeHtml(record.reason || "Awaiting analysis.")}</div>
+    ${record.findings ? `<div class="record-findings"><span class="record-label">VALIDATOR FINDINGS</span><p>${escapeHtml(record.findings)}</p></div>` : ""}
     <div class="record-evidence">${evidence || '<span class="record-label">No evidence URLs stored yet.</span>'}</div>`;
 }
 
@@ -160,3 +170,9 @@ if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", (accounts) => { state.account = accounts?.[0] || null; $("connect-wallet").textContent = state.account ? `${state.account.slice(0, 6)}…${state.account.slice(-4)}` : "Connect MetaMask"; });
   window.ethereum.on?.("chainChanged", () => { state.client = null; activity("Network changed. Reconnect to Studionet before writing."); });
 }
+
+if (!$("verification-id").value.trim()) $("verification-id").value = LIVE_VERIFICATION_ID;
+loadRecord().catch((error) => {
+  renderRecord(null);
+  activity(`Live record could not load automatically: ${error.message || "read unavailable"}. You can retry without connecting a wallet.`);
+});

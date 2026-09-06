@@ -20,7 +20,12 @@ Each verification stores the creator, repository URL, exact commit hash, declare
 
 The browser DApp connects MetaMask through EIP-1193 and GenLayerJS on Studionet. It supports public record reads and wallet-signed creation, analysis, and recheck actions.
 
-- Live DApp: https://reposeal.amzar1st96.chatgpt.site
+- Public live DApp: https://reposeal.amzar1st96.chatgpt.site
 - Source: https://github.com/amzar1st/RepoSeal
 - Deployed contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
 - Deployment transaction: https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8
+- Finalized create transaction: https://explorer-studio.genlayer.com/tx/0x6313953207e44d81f593c9b91fa35c187c70aa77f59683ff53979fbf0a764a33
+- Finalized analysis transaction: https://explorer-studio.genlayer.com/tx/0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296
+- Live record: `verify-1` — `INCONCLUSIVE`, score `55/100`, checked at `2026-09-06T16:32:48Z`
+
+The live result is intentionally reported exactly as consensus stored it. RepoSeal verified the commit and MIT license but withheld a `COMPLIANT` claim because three Git-based Python dependency licenses could not be resolved from PyPI. The public DApp preloads this finalized record without a wallet and offers MetaMask-signed create, analysis, and recheck actions.

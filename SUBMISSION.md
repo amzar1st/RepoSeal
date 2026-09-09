@@ -16,7 +16,7 @@ RepoSeal — Decentralized Open-Source Compliance Verification
 
 ## Description (under 1,000 characters)
 
-RepoSeal is a GenLayer Intelligent Contract that checks whether an exact public
+RepoSeal is a GenLayer Intelligent Contract that checks whether a specific public
 GitHub commit follows its declared open-source license and direct-dependency
 policy. Validators independently retrieve commit and tree data, license and
 README files, package manifests, npm/PyPI license metadata, and official SPDX
@@ -25,7 +25,7 @@ analysis and accept only the same verdict with bounded score variance. The
 contract stores COMPLIANT, NON_COMPLIANT, or INCONCLUSIVE with its score,
 reason, findings, evidence URLs, commit hash, creator, and timestamps. Missing
 material evidence fails closed to INCONCLUSIVE. Creator-only analyze/recheck
-writes, exact commit pinning, bounded inputs, prompt-injection defenses, six
+writes, commit pinning, bounded inputs, prompt-injection defenses, six
 public methods, direct-mode tests, CI, deployment records, and finalized
 Studionet transactions are included.
 

@@ -34,8 +34,8 @@ Studionet transactions are included.
 - Repository: https://github.com/amzar1st/RepoSeal
 - Contract source: https://github.com/amzar1st/RepoSeal/blob/main/contracts/reposeal.py
 - Direct tests: https://github.com/amzar1st/RepoSeal/tree/main/tests/direct
+- Contract-only conversion: https://github.com/amzar1st/RepoSeal/commit/04762b86b22c48f57dec874e7f429cac88f078e8
 - Deployment: https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8
-- Contract: https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F
 - Analyze: https://explorer-studio.genlayer.com/tx/0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296
 - Recheck: https://explorer-studio.genlayer.com/tx/0xbce2d71d411a295725a8f8e412d58cdd6022f92b9e5a39a8da5aed0f7538a0db
 

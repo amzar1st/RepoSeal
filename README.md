@@ -1,5 +1,7 @@
 # RepoSeal — Intelligent Contract
 
+[![RepoSeal contract checks](https://github.com/amzar1st/RepoSeal/actions/workflows/ci.yml/badge.svg)](https://github.com/amzar1st/RepoSeal/actions/workflows/ci.yml)
+
 RepoSeal is a GenLayer Intelligent Contract that verifies whether an exact
 public GitHub commit follows its declared open-source license and direct-
 dependency policy. Validators inspect live repository files, package-registry

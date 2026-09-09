@@ -2,7 +2,7 @@
 
 [![RepoSeal contract checks](https://github.com/amzar1st/RepoSeal/actions/workflows/ci.yml/badge.svg)](https://github.com/amzar1st/RepoSeal/actions/workflows/ci.yml)
 
-RepoSeal is a GenLayer Intelligent Contract that verifies whether an exact
+RepoSeal is a GenLayer Intelligent Contract that verifies whether a specific
 public GitHub commit follows its declared open-source license and direct-
 dependency policy. Validators inspect live repository files, package-registry
 metadata, and official SPDX requirements; independently apply the same rubric;

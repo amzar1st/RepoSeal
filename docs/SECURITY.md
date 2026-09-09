@@ -8,7 +8,8 @@ analysis state.
 
 ## Controls
 
-- Repository URLs are restricted to `https://github.com/owner/repository`.
+- Repository URLs must start with `https://github.com/` and include an owner
+  and repository segment.
 - Commit identifiers must be 7-64 hexadecimal characters; immutable full SHAs
   are required operationally and used in the documented live proof.
 - Only a record's creator may analyze or recheck it.

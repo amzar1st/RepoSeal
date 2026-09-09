@@ -1,16 +1,17 @@
-# RepoSeal deployment checklist
+# RepoSeal deployment evidence
 
 ## Current Studionet deployment
 
 - Status: `FINALIZED`
 - Consensus mode: `Normal (Full Consensus)`
 - Contract: `0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F`
-- Transaction: `0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8`
-- Original smoke test: `get_verification_count()` returned `0` from accepted state.
+- Deployment transaction: `0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8`
+- Deployed: `2026-09-05T18:40:15Z`
+- Original read smoke test: `get_verification_count()` returned `0` from accepted state.
 - Contract explorer: https://explorer-studio.genlayer.com/address/0xD5a60c99d1ddBc2091ae08eC0fAeEe068670C92F
 - Transaction explorer: https://explorer-studio.genlayer.com/tx/0xb49189cd819dabe1fea5a1b13932556b506014f3b0b40c8488c10cca6c7f47a8
 
-## Completed full-consensus verification
+## Finalized full-consensus analysis
 
 - Verification ID: `verify-1`
 - Repository: `https://github.com/amzar1st/RepoSeal`
@@ -19,11 +20,15 @@
 - Analyze transaction: `0x433261a40f97221c06f3bc28962a77d74aef5e8afe69d90451b1c04331d8b296` (`FINALIZED`)
 - Stored verdict: `INCONCLUSIVE`
 - Score: `55/100`
-- Checked at: `2026-09-06T16:32:48Z`
+- Checked: `2026-09-06T16:32:48Z`
 
-The validators verified the pinned commit, an exact MIT license match, the README, and compatible license metadata for the resolvable npm/PyPI dependencies. They returned `INCONCLUSIVE` because the registry requests generated for `genlayer-py`, `genlayer-test`, and `genvm-linter` Git dependencies returned `404`, preventing all direct dependency licenses from being identified. This is a completed verdict, not a pending or smoke-test-only claim.
+Validators verified the pinned commit, MIT license, README, and compatible
+metadata for resolvable dependencies. They returned `INCONCLUSIVE` because
+three Git-form Python dependencies were queried as PyPI names and returned
+`404`, leaving material license evidence unresolved. This is a completed,
+fail-closed verdict.
 
-## Completed full-consensus recheck
+## Finalized new-commit recheck
 
 - Verification ID: `verify-1`
 - New commit: `7e36fef83d10eb9452fefd7d9aabd253f46766fd`
@@ -31,31 +36,43 @@ The validators verified the pinned commit, an exact MIT license match, the READM
 - Stored verdict: `INCONCLUSIVE`
 - Score: `55/100`
 - Recheck count: `1`
-- Checked at: `2026-09-06T16:53:41Z`
+- Checked: `2026-09-06T16:53:41Z`
 
-The recheck verified that the new exact commit exists, that its repository tree is available, and that its license and README evidence remain consistent with MIT. The same three Git-based Python package licenses could not be verified through the generated PyPI requests, so consensus correctly retained an `INCONCLUSIVE` verdict.
+The recheck verified that the new exact commit and tree exist and that license
+and README evidence remain consistent with MIT. It retained `INCONCLUSIVE`
+because the same three dependency licenses remained unresolved.
 
-## Contract
+## Reproduce the contract checks
 
-1. Open GenLayer Studio and select the stable **Studionet** network.
-2. Deploy `contracts/reposeal.py` with no constructor arguments.
-3. Confirm deployment execution is successful, not only accepted/finalized.
-4. Save the contract address in `deployments/studionet.json` and in the RepoSeal website console.
-5. Keep the deployment transaction hash and explorer URL in the same deployment record.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+pytest -q
+genvm-lint check contracts/reposeal.py
+```
 
-The stable Studionet configuration is chain ID `61999` and native token `GEN`. The network-specific explorer is `https://explorer-studio.genlayer.com`.
+## Deploy from the CLI
 
-## First end-to-end run
+```bash
+genlayer network set studionet
+genlayer network info
+genlayer deploy --contract contracts/reposeal.py
+```
 
-Use a public repository and an exact 40-character commit SHA.
+The constructor takes no arguments. Confirm stable Studionet, chain ID `61999`,
+and Normal / Full Consensus before signing.
 
-1. Connect MetaMask to Studionet.
-2. Call `create_verification` with a declared license and an explicit dependency policy.
-3. Wait for the transaction to finalize and record the returned ID (`verify-1`, etc.).
-4. Call `get_verification` to confirm the record is `CREATED`.
-5. Call `analyze_repository` from the same creator wallet.
-6. Wait for the consensus transaction to finalize.
-7. Call `get_verification` again and record the verdict, reason, commit hash, evidence URLs, score, and timestamp.
-8. Call `recheck_new_commit` with a different exact SHA and confirm the old result is cleared before the new consensus result is stored.
+## Verify any deployment
 
-Do not claim a successful analysis from a transaction status alone. The execution result must show a returned value/successful contract execution.
+1. Wait for the deployment to become final.
+2. Confirm successful contract execution, not transaction status alone.
+3. Verify the six-method schema documented in `README.md`.
+4. Call `get_verification_count()` as a read smoke test.
+5. Create a record for a public repository and immutable 40-character SHA.
+6. Read the returned `verify-N`, then run `analyze_repository` as its creator.
+7. After finality, read and record verdict, score, reason, findings, evidence
+   URLs, checked commit, and timestamp.
+8. Recheck a different commit and verify `recheck_count` increments.
+
+The canonical machine-readable record is `deployments/studionet.json`.
